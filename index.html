@@ -17,13 +17,27 @@
 
     <main>
         <section id="game-section">
-            <div id="game-board">
-                <!-- ゲームボードの要素が main.js によってここに追加されます -->
+            <div id="game-area">
+                <div id="game-board">
+                    <!-- ゲームボードの要素が main.js によってここに追加されます -->
+                </div>
+                <div id="yaku-navi">
+                    <h3>役ナビ</h3>
+                    <div id="yaku-list"></div>
+                </div>
             </div>
             <div id="koikoi-prompt" class="hidden">
                 <p>役ができました！どうしますか？</p>
                 <button id="koikoi-button">こいこい</button>
                 <button id="shobu-button">勝負</button>
+            </div>
+            <div id="yaku-modal" class="modal hidden">
+                <div class="modal-content">
+                    <span class="close-button">&times;</span>
+                    <h3 id="modal-yaku-name"></h3>
+                    <p id="modal-yaku-points"></p>
+                    <div id="modal-yaku-cards" class="cards-container"></div>
+                </div>
             </div>
         </section>
 

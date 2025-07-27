@@ -52,92 +52,63 @@ const HanafudaCards = [
     { id: 48, month: 12, name: "桐", type: "kasu", image: "textures/hanafuda_12_04.jpg" },
 ];
 
-// 役の定義
 const YakuDefinitions = {
-    goko: { name: "五光", points: 10 },
-    shiko: { name: "四光", points: 8 },
-    ameshiko: { name: "雨四光", points: 7 },
-    sanko: { name: "三光", points: 5 },
-    inoshikacho: { name: "猪鹿蝶", points: 5 },
-    akatan: { name: "赤短", points: 6 },
-    aotan: { name: "青短", points: 6 },
-    tanzaku: { name: "短冊", points: 1 },
-    tane: { name: "タネ", points: 1 },
-    kasu: { name: "カス", points: 1 },
+    goko: { name: "五光", points: 10, cards: ["松に鶴", "桜に幕", "芒に月", "柳に小野道風", "桐に鳳凰"] },
+    shiko: { name: "四光", points: 8, cards: ["松に鶴", "桜に幕", "芒に月", "桐に鳳凰"] },
+    ameshiko: { name: "雨四光", points: 7, cards: ["松に鶴", "桜に幕", "芒に月", "柳に小野道風"] },
+    sanko: { name: "三光", points: 5, cards: ["松に鶴", "桜に幕", "芒に月"] },
+    inoshikacho: { name: "猪鹿蝶", points: 5, cards: ["萩に猪", "紅葉に鹿", "牡丹に蝶"] },
+    akatan: { name: "赤短", points: 6, cards: ["松に赤短", "梅に赤短", "桜に赤短"] },
+    aotan: { name: "青短", points: 6, cards: ["牡丹に青短", "菊に青短", "紅葉に青短"] },
+    tanzaku: { name: "短冊", points: 1, count: 5, type: 'tanzaku' },
+    tane: { name: "タネ", points: 1, count: 5, type: 'tane' },
+    kasu: { name: "カス", points: 1, count: 10, type: 'kasu' }
 };
 
 function checkYaku(cards) {
     const yaku = {};
-    const counts = { hikari: 0, tane: 0, tanzaku: 0, kasu: 0 };
     const names = cards.map(c => c.name);
+    const types = cards.map(c => c.type);
 
-    for (const card of cards) {
-        counts[card.type]++;
-    }
-
+    // Hikari Yaku (Light Cards)
     const hikariCards = cards.filter(c => c.type === 'hikari');
-    const isAme = names.includes("柳に小野道風");
+    const hasRainMan = hikariCards.some(c => c.name === "柳に小野道風");
 
     if (hikariCards.length === 5) {
         yaku.goko = YakuDefinitions.goko;
     } else if (hikariCards.length === 4) {
-        if (isAme) {
+        if (hasRainMan) {
             yaku.ameshiko = YakuDefinitions.ameshiko;
         } else {
             yaku.shiko = YakuDefinitions.shiko;
         }
-    } else if (hikariCards.length === 3 && !isAme) {
+    } else if (hikariCards.length === 3 && !hasRainMan) {
         yaku.sanko = YakuDefinitions.sanko;
     }
 
-    if (names.includes("萩に猪") && names.includes("紅葉に鹿") && names.includes("牡丹に蝶")) {
-        yaku.inoshikacho = YakuDefinitions.inoshikacho;
-    }
+    // Other combination yaku
+    if (YakuDefinitions.inoshikacho.cards.every(c => names.includes(c))) yaku.inoshikacho = YakuDefinitions.inoshikacho;
+    if (YakuDefinitions.akatan.cards.every(c => names.includes(c))) yaku.akatan = YakuDefinitions.akatan;
+    if (YakuDefinitions.aotan.cards.every(c => names.includes(c))) yaku.aotan = YakuDefinitions.aotan;
 
-    const tanzakuCards = cards.filter(c => c.type === 'tanzaku');
-    const akatanCards = tanzakuCards.filter(c => ["松に赤短", "梅に赤短", "桜に赤短"].includes(c.name));
-    if (akatanCards.length === 3) {
-        yaku.akatan = YakuDefinitions.akatan;
-    }
+    // Count-based yaku
+    const tanzakuCount = types.filter(t => t === 'tanzaku').length;
+    if (tanzakuCount >= 5) yaku.tanzaku = { ...YakuDefinitions.tanzaku, points: 1 + (tanzakuCount - 5) };
 
-    const aotanCards = tanzakuCards.filter(c => ["牡丹に青短", "菊に青短", "紅葉に青短"].includes(c.name));
-    if (aotanCards.length === 3) {
-        yaku.aotan = YakuDefinitions.aotan;
-    }
+    const taneCount = types.filter(t => t === 'tane').length;
+    if (taneCount >= 5) yaku.tane = { ...YakuDefinitions.tane, points: 1 + (taneCount - 5) };
 
-    if (tanzakuCards.length >= 5) {
-        yaku.tanzaku = { ...YakuDefinitions.tanzaku, points: YakuDefinitions.tanzaku.points + (tanzakuCards.length - 5) };
-    }
+    const kasuCount = types.filter(t => t === 'kasu').length;
+    if (kasuCount >= 10) yaku.kasu = { ...YakuDefinitions.kasu, points: 1 + (kasuCount - 10) };
 
-    const taneCards = cards.filter(c => c.type === 'tane');
-    if (taneCards.length >= 5) {
-        yaku.tane = { ...YakuDefinitions.tane, points: YakuDefinitions.tane.points + (taneCards.length - 5) };
-    }
-
-    if (counts.kasu >= 10) {
-        yaku.kasu = { ...YakuDefinitions.kasu, points: YakuDefinitions.kasu.points + (counts.kasu - 10) };
-    }
-
-    let totalPoints = 0;
-    for (const y in yaku) {
-        totalPoints += yaku[y].points;
-    }
-
+    let totalPoints = Object.values(yaku).reduce((sum, y) => sum + y.points, 0);
     return { yaku, points: totalPoints };
 }
 
 
-// ゲームの状態を管理する変数
-let deck = [];
-let field = [];
-let playerHand = [];
-let aiHand = [];
-let playerCapturedCards = [];
-let aiCapturedCards = [];
-let currentPlayer = 'player';
-let isKoiKoi = false;
+// Game State
+let deck, field, playerHand, aiHand, playerCapturedCards, aiCapturedCards, currentPlayer, isKoiKoi;
 
-// ゲームの初期化
 function initializeGame() {
     deck = [...HanafudaCards].sort(() => Math.random() - 0.5);
     field = deck.splice(0, 8);
@@ -148,89 +119,60 @@ function initializeGame() {
     currentPlayer = 'player';
     isKoiKoi = false;
     renderGameBoard();
+    renderYakuNavi();
+    setupModal();
 }
 
 function renderGameBoard() {
     const gameBoard = document.getElementById('game-board');
     gameBoard.innerHTML = `
-        <div id="ai-area" class="player-area">
-            <div class="info">
-                <h3>AI</h3>
-                <p>得点: <span id="ai-score">0</span></p>
-                <div id="ai-yaku" class="yaku-display"></div>
-            </div>
-            <div class="cards-container hand-cards" id="ai-hand">
-                <!-- AIの手札 -->
-            </div>
-            <div class="captured-area">
-                <h4>取った札</h4>
-                <div class="cards-container" id="ai-captured-cards">
-                    <!-- AIが取った札 -->
-                </div>
-            </div>
+        <div class="player-area">
+            <div class="info"><h3>AI (<span id="ai-hand-count">${aiHand.length}</span>)</h3><p>得点: <span id="ai-score">0</span></p><div id="ai-yaku" class="yaku-display"></div></div>
+            <div class="cards-container" id="ai-captured-cards"></div>
         </div>
-
         <div class="field-area">
-            <div class="cards-container field-cards" id="field-cards">
-                <!-- 場札 -->
-            </div>
-            <div class="deck-area" id="deck-area">
-                <!-- 山札 -->
-            </div>
+            <div class="cards-container field-cards" id="field-cards"></div>
+            <div class="deck-area" id="deck-area"></div>
         </div>
-
-        <div id="player-area" class="player-area">
-            <div class="info">
-                <h3>プレイヤー</h3>
-                <p>得点: <span id="player-score">0</span></p>
-                <div id="player-yaku" class="yaku-display"></div>
-            </div>
-            <div class="cards-container hand-cards" id="player-hand">
-                <!-- プレイヤーの手札 -->
-            </div>
-            <div class="captured-area">
-                <h4>取った札</h4>
-                <div class="cards-container" id="player-captured-cards">
-                    <!-- プレイヤーが取った札 -->
-                </div>
-            </div>
+        <div class="player-area">
+            <div class="info"><h3>Player (<span id="player-hand-count">${playerHand.length}</span>)</h3><p>得点: <span id="player-score">0</span></p><div id="player-yaku" class="yaku-display"></div></div>
+            <div class="cards-container hand-cards" id="player-hand"></div>
+            <div class="cards-container" id="player-captured-cards"></div>
         </div>
     `;
-
-    renderCards();
+    renderAllCards();
     updateScores();
 }
 
-function renderCards() {
-    // AI Hand
-    const aiHandDiv = document.getElementById('ai-hand');
-    aiHandDiv.innerHTML = '';
-    aiHand.forEach(() => aiHandDiv.appendChild(createCardElement(null, true)));
+function renderAllCards() {
+    // Hands
+    document.getElementById('ai-hand-count').textContent = aiHand.length;
+    document.getElementById('player-hand-count').textContent = playerHand.length;
+    const playerHandDiv = document.getElementById('player-hand');
+    playerHandDiv.innerHTML = '';
+    playerHand.forEach(card => {
+        const el = createCardElement(card);
+        if (currentPlayer === 'player') {
+            el.classList.add('playable');
+            el.addEventListener('click', () => playPlayerCard(card));
+            el.addEventListener('mouseover', () => highlightMatchingFieldCards(card));
+            el.addEventListener('mouseout', clearHighlights);
+        }
+        playerHandDiv.appendChild(el);
+    });
 
-    // Field Cards
+    // Field
     const fieldCardsDiv = document.getElementById('field-cards');
     fieldCardsDiv.innerHTML = '';
     field.forEach(card => fieldCardsDiv.appendChild(createCardElement(card)));
 
-    // Player Hand
-    const playerHandDiv = document.getElementById('player-hand');
-    playerHandDiv.innerHTML = '';
-    playerHand.forEach(card => {
-        const cardElement = createCardElement(card);
-        if (currentPlayer === 'player') {
-            cardElement.classList.add('playable');
-            cardElement.addEventListener('click', () => playPlayerCard(card));
-            cardElement.addEventListener('mouseover', () => highlightMatchingFieldCards(card));
-            cardElement.addEventListener('mouseout', clearHighlights);
-        }
-        playerHandDiv.appendChild(cardElement);
-    });
-
-    // Captured Cards
-    document.getElementById('ai-captured-cards').innerHTML = '';
-    aiCapturedCards.forEach(card => document.getElementById('ai-captured-cards').appendChild(createCardElement(card)));
-    document.getElementById('player-captured-cards').innerHTML = '';
-    playerCapturedCards.forEach(card => document.getElementById('player-captured-cards').appendChild(createCardElement(card)));
+    // Captured
+    const pCapDiv = document.getElementById('player-captured-cards');
+    pCapDiv.innerHTML = '';
+    playerCapturedCards.forEach(card => pCapDiv.appendChild(createCardElement(card)));
+    const aiCapDiv = document.getElementById('ai-captured-cards');
+    aiCapDiv.innerHTML = '';
+    aiCapturedCards.forEach(card => aiCapDiv.appendChild(createCardElement(card)));
 
     // Deck
     const deckAreaDiv = document.getElementById('deck-area');
@@ -242,40 +184,99 @@ function renderCards() {
     }
 }
 
-function createCardElement(card, isBack = false) {
-    const cardElement = document.createElement(isBack ? 'div' : 'img');
-    cardElement.classList.add('card');
-    if (isBack) {
-        cardElement.classList.add('back');
-    } else {
-        cardElement.src = card.image;
-        cardElement.alt = card.name;
-        cardElement.dataset.id = card.id;
+function renderYakuNavi() {
+    const yakuList = document.getElementById('yaku-list');
+    yakuList.innerHTML = '';
+    const playerCardNames = playerCapturedCards.map(c => c.name);
+
+    for (const key in YakuDefinitions) {
+        const yaku = YakuDefinitions[key];
+        const item = document.createElement('div');
+        item.className = 'yaku-item';
+        item.onclick = () => showYakuModal(key);
+
+        let progress = 0;
+        let isCompleted = false;
+
+        if (yaku.cards) { // Combination yaku
+            const collected = yaku.cards.filter(c => playerCardNames.includes(c));
+            progress = (collected.length / yaku.cards.length) * 100;
+            if (progress >= 100) isCompleted = true;
+        } else { // Count yaku
+            const count = playerCapturedCards.filter(c => c.type === yaku.type).length;
+            progress = (count / yaku.count) * 100;
+            if (progress >= 100) isCompleted = true;
+        }
+
+        item.innerHTML = `
+            <span>${yaku.name} (${yaku.points}点)</span>
+            <div class="progress-bar"><div class="progress" style="width: ${progress}%;"></div></div>
+        `;
+        if (isCompleted) item.classList.add('completed');
+
+        yakuList.appendChild(item);
     }
-    return cardElement;
+}
+
+function setupModal() {
+    const modal = document.getElementById('yaku-modal');
+    const closeButton = document.querySelector('.close-button');
+    closeButton.onclick = closeModal;
+    window.onclick = (event) => {
+        if (event.target == modal) closeModal();
+    };
+}
+
+function showYakuModal(yakuKey) {
+    const yaku = YakuDefinitions[yakuKey];
+    document.getElementById('modal-yaku-name').textContent = yaku.name;
+    document.getElementById('modal-yaku-points').textContent = `${yaku.points}点`;
+    const cardContainer = document.getElementById('modal-yaku-cards');
+    cardContainer.innerHTML = '';
+
+    if (yaku.cards) {
+        yaku.cards.forEach(cardName => {
+            const cardData = HanafudaCards.find(c => c.name === cardName);
+            cardContainer.appendChild(createCardElement(cardData));
+        });
+    } else {
+        document.getElementById('modal-yaku-points').textContent += ` (${yaku.type}を${yaku.count}枚)`;
+    }
+
+    document.getElementById('yaku-modal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('yaku-modal').classList.add('hidden');
+}
+
+function createCardElement(card, isBack = false) {
+    const el = document.createElement(isBack ? 'div' : 'img');
+    el.className = 'card';
+    if (isBack) el.classList.add('back');
+    else { el.src = card.image; el.alt = card.name; el.dataset.id = card.id; }
+    return el;
 }
 
 function updateScores() {
-    const playerResult = checkYaku(playerCapturedCards);
-    document.getElementById('player-score').textContent = playerResult.points;
-    document.getElementById('player-yaku').innerHTML = Object.values(playerResult.yaku).map(y => `${y.name} (${y.points}点)`).join('<br>');
+    const pResult = checkYaku(playerCapturedCards);
+    document.getElementById('player-score').textContent = pResult.points;
+    document.getElementById('player-yaku').innerHTML = Object.values(pResult.yaku).map(y => y.name).join(', ');
 
     const aiResult = checkYaku(aiCapturedCards);
     document.getElementById('ai-score').textContent = aiResult.points;
-    document.getElementById('ai-yaku').innerHTML = Object.values(aiResult.yaku).map(y => `${y.name} (${y.points}点)`).join('<br>');
+    document.getElementById('ai-yaku').innerHTML = Object.values(aiResult.yaku).map(y => y.name).join(', ');
 }
 
 async function playPlayerCard(card) {
     if (currentPlayer !== 'player') return;
-    const cardIndex = playerHand.findIndex(c => c.id === card.id);
-    if (cardIndex > -1) {
-        const playedCard = playerHand.splice(cardIndex, 1)[0];
-        await handleTurn(playedCard, playerCapturedCards);
-    }
+    const idx = playerHand.findIndex(c => c.id === card.id);
+    if (idx > -1) await handleTurn(playerHand.splice(idx, 1)[0], playerCapturedCards);
 }
 
 async function aiTurn() {
     if (currentPlayer !== 'ai') return;
+    await new Promise(r => setTimeout(r, 1000));
     const cardToPlay = aiHand[Math.floor(Math.random() * aiHand.length)];
     aiHand.splice(aiHand.indexOf(cardToPlay), 1);
     await handleTurn(cardToPlay, aiCapturedCards);
@@ -283,7 +284,7 @@ async function aiTurn() {
 
 async function handleTurn(playedCard, capturedPile) {
     field.push(playedCard);
-    renderCards();
+    renderAllCards();
     await new Promise(r => setTimeout(r, 500));
 
     await handleMatches(playedCard, capturedPile);
@@ -291,12 +292,14 @@ async function handleTurn(playedCard, capturedPile) {
     const drawnCard = deck.pop();
     if (drawnCard) {
         field.push(drawnCard);
-        renderCards();
+        renderAllCards();
         await new Promise(r => setTimeout(r, 500));
         await handleMatches(drawnCard, capturedPile);
     }
 
     updateScores();
+    renderYakuNavi();
+
     const result = checkYaku(capturedPile);
     const lastYakuCount = Object.keys(checkYaku(capturedPile.slice(0, -2)).yaku).length;
     if (result.points > 0 && Object.keys(result.yaku).length > lastYakuCount) {
@@ -314,20 +317,15 @@ async function handleMatches(card, capturedPile) {
         field.splice(field.indexOf(match), 1);
         capturedPile.push(card, match);
     }
-    renderCards();
+    renderAllCards();
     await new Promise(r => setTimeout(r, 500));
 }
 
 function switchTurn() {
-    if (checkGameOver()) {
-        endGame();
-        return;
-    }
+    if (checkGameOver()) { endGame(); return; }
     currentPlayer = (currentPlayer === 'player') ? 'ai' : 'player';
-    renderCards();
-    if (currentPlayer === 'ai') {
-        setTimeout(aiTurn, 1000);
-    }
+    renderAllCards();
+    if (currentPlayer === 'ai') aiTurn();
 }
 
 function showKoiKoiPrompt(points) {
@@ -342,11 +340,11 @@ function showKoiKoiPrompt(points) {
 }
 
 function endGame() {
-    const playerResult = checkYaku(playerCapturedCards);
+    const pResult = checkYaku(playerCapturedCards);
     const aiResult = checkYaku(aiCapturedCards);
     let winnerMsg = "引き分け！";
-    if (playerResult.points > aiResult.points) winnerMsg = `プレイヤーの勝利！ (${playerResult.points}点)`;
-    if (aiResult.points > playerResult.points) winnerMsg = `AIの勝利！ (${aiResult.points}点)`;
+    if (pResult.points > aiResult.points) winnerMsg = `プレイヤーの勝利！ (${pResult.points}点)`;
+    if (aiResult.points > pResult.points) winnerMsg = `AIの勝利！ (${aiResult.points}点)`;
     alert(`ゲーム終了！\n\n${winnerMsg}`);
     initializeGame();
 }
@@ -386,17 +384,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('rules-content').innerHTML = `
             <h3>こいこいルール概要</h3>
             <p>花札のこいこいは、手札と場札を合わせて役を作り、得点を競うゲームです。</p>
-            <h4>ゲームの流れ</h4>
-            <ol>
-                <li>手札8枚、場札8枚で開始します。</li>
-                <li>自分の番になったら、手札から1枚選んで場に出します。</li>
-                <li>同じ月の札が場にあれば、2枚とも自分のものになります。</li>
-                <li>その後、山札から1枚めくり、場に出します。</li>
-                <li>これも同じ月の札が場にあれば、2枚とも自分のものになります。</li>
-                <li>取った札で役ができたら、「こいこい」してゲームを続けるか、「勝負」してラウンドを終了するか選べます。</li>
-                <li>「こいこい」すると、次以降にできた役の点数が加算されます。相手が先に役を完成させて上がると、自分の得点は0になります。</li>
-                <li>手札がなくなったらゲーム終了です。</li>
-            </ol>
             <h4>主な役</h4>
             <ul>
                 <li><b>五光 (10点)</b>: 光札5枚</li>
