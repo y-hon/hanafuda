@@ -7,10 +7,35 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>花札こいこい</h1>
-    <div id="game-container">
-        <!-- ゲーム画面の要素がここに追加されます -->
-    </div>
+    <header>
+        <h1>花札こいこい</h1>
+        <nav>
+            <button id="show-game">ゲーム</button>
+            <button id="show-rules">ルール</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="game-section">
+            <h2>ゲーム画面</h2>
+            <div id="game-container">
+                <!-- ゲームの要素がここに追加されます -->
+            </div>
+            <div id="koikoi-prompt" class="hidden">
+                <p>役ができました！どうしますか？</p>
+                <button id="koikoi-button">こいこい</button>
+                <button id="shobu-button">勝負</button>
+            </div>
+        </section>
+
+        <section id="rules-section" class="hidden">
+            <h2>ルール説明</h2>
+            <div id="rules-content">
+                <!-- ルール説明のコンテンツがここに追加されます -->
+            </div>
+        </section>
+    </main>
+
     <script src="main.js"></script>
 </body>
 </html>
