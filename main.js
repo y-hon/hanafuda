@@ -65,6 +65,8 @@ const YakuDefinitions = {
     kasu: { name: "カス", points: 1, count: 10, type: 'kasu' }
 };
 
+const CardTypeDisplayNames = { hikari: "光札", tane: "タネ札", tanzaku: "短冊札", kasu: "カス札" };
+
 function checkYaku(cards) {
     const yaku = {};
     const names = cards.map(c => c.name);
@@ -132,6 +134,7 @@ function renderGameBoard() {
         </div>
         <div class="field-area">
             <div class="cards-container field-cards" id="field-cards"></div>
+            <div id="hint-area"></div>
             <div class="deck-area" id="deck-area"></div>
         </div>
         <div class="player-area">
@@ -355,14 +358,55 @@ function checkGameOver() {
 
 function highlightMatchingFieldCards(handCard) {
     clearHighlights();
-    document.querySelectorAll('#field-cards .card').forEach(el => {
-        const fieldCard = field.find(c => c.id == el.dataset.id);
-        if (fieldCard && fieldCard.month === handCard.month) el.classList.add('highlight');
-    });
+    const hintArea = document.getElementById('hint-area');
+    const fieldCardsDiv = document.getElementById('field-cards');
+    const matchingFieldCards = field.filter(c => c.month === handCard.month);
+
+    if (matchingFieldCards.length > 0) {
+        matchingFieldCards.forEach(match => {
+            for (const el of fieldCardsDiv.children) {
+                if (el.dataset.id == match.id) {
+                    el.classList.add('highlight');
+                }
+            }
+        });
+
+        // Generate hint text
+        const potentialCards = [...playerCapturedCards, handCard, ...matchingFieldCards];
+        const currentYaku = checkYaku(playerCapturedCards).yaku;
+        const potentialYaku = checkYaku(potentialCards).yaku;
+        const newYaku = Object.keys(potentialYaku).filter(key => !currentYaku[key]);
+
+        if (newYaku.length > 0) {
+            const yakuName = potentialYaku[newYaku[0]].name;
+            const yakuPoints = potentialYaku[newYaku[0]].points;
+            let hintText = `${yakuName} (${yakuPoints}点) に近づきます！`;
+
+            // For combination yaku, show missing cards
+            if (YakuDefinitions[newYaku[0]].cards) {
+                const requiredCards = YakuDefinitions[newYaku[0]].cards;
+                const collectedCards = potentialCards.map(c => c.name);
+                const missingCards = requiredCards.filter(cardName => !collectedCards.includes(cardName));
+                if (missingCards.length > 0) {
+                    hintText += ` (あと${missingCards.join('、')})`;
+                }
+            }
+            hintArea.textContent = hintText;
+        } else if (matchingFieldCards.length > 0) {
+            const matchedCardType = CardTypeDisplayNames[matchingFieldCards[0].type];
+            hintArea.textContent = `${matchedCardType}とペアが作れます。`;
+        } else {
+            hintArea.textContent = '場に出せるペアがありません';
+        }
+
+    } else {
+        hintArea.textContent = '場に出せるペアがありません';
+    }
 }
 
 function clearHighlights() {
     document.querySelectorAll('.card.highlight').forEach(c => c.classList.remove('highlight'));
+    document.getElementById('hint-area').textContent = '';
 }
 
 document.addEventListener('DOMContentLoaded', () => {

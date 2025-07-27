@@ -155,6 +155,21 @@ main {
     padding: 8px;
 }
 
+#hint-area {
+    width: 150px;
+    height: 100px;
+    flex-shrink: 0;
+    padding: 10px;
+    box-sizing: border-box;
+    background-color: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    font-size: 0.9em;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .deck-area {
     display: flex;
     justify-content: center;
