@@ -4,23 +4,24 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 20px;
-    background-color: #f0f0f0;
+    margin: 0;
+    background-color: #35654d; /* 深い緑色 */
+    color: #fff;
 }
 
 header {
     width: 100%;
-    max-width: 800px;
     text-align: center;
-    margin-bottom: 20px;
+    padding: 10px 0;
+    background-color: rgba(0,0,0,0.2);
 }
 
 h1 {
-    color: #333;
+    margin: 0;
 }
 
 nav button {
-    padding: 10px 20px;
+    padding: 8px 16px;
     margin: 0 10px;
     font-size: 1em;
     cursor: pointer;
@@ -36,122 +37,105 @@ nav button:hover {
 
 main {
     width: 100%;
-    max_width: 800px;
-    background-color: #fff;
-    box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+    max-width: 1000px;
     padding: 20px;
-    border-radius: 8px;
+    box-sizing: border-box;
 }
 
 .hidden {
     display: none;
 }
 
-#game-container {
-    /* game-container のスタイルは game-area に移譲 */
+#game-board {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 20px;
     width: 100%;
-    min-height: 400px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 2em;
-    color: #666;
+    height: calc(100vh - 150px); /* ヘッダー等を考慮した高さ */
 }
 
-#rules-content {
-    padding: 20px;
-    border: 1px solid #eee;
-    background-color: #f9f9f9;
-    border-radius: 5px;
-}
-
-/* ゲーム画面のレイアウト */
-.game-area {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
+.player-area, .field-area {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    padding: 15px;
     box-sizing: border-box;
-}
-
-.player-area {
-    width: 100%;
-    text-align: center;
-    margin-bottom: 10px;
 }
 
 .field-area {
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    margin-bottom: 10px;
+    gap: 20px;
 }
 
-.hand-cards,
+.cards-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.hand-cards {
+    min-height: 110px;
+}
+
 .field-cards {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 5px;
-    min-height: 100px; /* 札がない場合でも領域を確保 */
-    border: 1px dashed #ccc;
-    padding: 5px;
-    border-radius: 5px;
-}
-
-.captured-cards {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 5px;
-    min-height: 70px; /* 札がない場合でも領域を確保 */
-    border: 1px solid #a0a0a0;
-    padding: 5px;
-    border-radius: 5px;
-    background-color: #e0e0e0;
-    margin-top: 10px;
+    flex-grow: 1;
+    border: 2px dashed rgba(255,255,255,0.3);
+    min-height: 110px;
 }
 
 .deck-area {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100px;
-    border: 1px dashed #ccc;
-    padding: 5px;
-    border-radius: 5px;
-    margin-top: 10px;
+}
+
+.captured-area {
+    border-left: 2px solid rgba(255,255,255,0.3);
+    padding-left: 15px;
+    min-width: 200px;
 }
 
 .card {
-    width: 70px; /* 札の幅 */
-    height: 100px; /* 札の高さ */
-    border: 1px solid #333;
+    width: 60px;
+    height: 90px;
+    border: 1px solid #000;
     border-radius: 5px;
     object-fit: cover;
-    background-color: #eee;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 0.8em;
-    color: #555;
+    transition: all 0.2s ease-in-out;
 }
 
 .card.back {
-    background-color: #880000; /* 札の裏の色 */
+    background-color: #880000;
     color: white;
     font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card.playable {
+    cursor: pointer;
+}
+
+.card.playable:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+}
+
+.card.highlight {
+    box-shadow: 0 0 15px 5px #ffdd00;
+    border-color: #ffdd00;
 }
 
 #koikoi-prompt {
-    position: absolute;
+    position: fixed; /* fixedに変更 */
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #333;
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
@@ -172,4 +156,16 @@ main {
 
 #koikoi-prompt button:hover {
     background-color: #0056b3;
+}
+
+.yaku-display {
+    font-size: 0.9em;
+    min-height: 40px;
+}
+
+#rules-section {
+    background-color: #fff;
+    color: #333;
+    padding: 20px;
+    border-radius: 8px;
 }
