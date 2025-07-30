@@ -348,7 +348,9 @@ function endGame() {
     let winnerMsg = "引き分け！";
     if (pResult.points > aiResult.points) winnerMsg = `プレイヤーの勝利！ (${pResult.points}点)`;
     if (aiResult.points > pResult.points) winnerMsg = `AIの勝利！ (${aiResult.points}点)`;
-    alert(`ゲーム終了！\n\n${winnerMsg}`);
+    alert(`ゲーム終了！
+
+${winnerMsg}`);
     initializeGame();
 }
 
