@@ -129,6 +129,35 @@ main {
     flex-grow: 1;
 }
 
+.captured-cards {
+    display: flex;
+    flex-direction: column; /* グループを縦に並べる */
+    gap: 5px;
+    flex-grow: 1;
+}
+
+.card-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.group-title {
+    font-size: 0.8em;
+    font-weight: bold;
+    width: 20px; /* タイトルの幅を固定 */
+    text-align: center;
+}
+
+.cards-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
 .field-area {
     display: flex;
     justify-content: center;
@@ -156,18 +185,28 @@ main {
 }
 
 #hint-area {
-    width: 150px;
-    height: 100px;
+    width: 220px; /* 幅を広げる */
+    height: 140px; /* 高さを広げる */
     flex-shrink: 0;
-    padding: 10px;
+    padding: 12px;
     box-sizing: border-box;
-    background-color: rgba(0,0,0,0.3);
+    background-color: rgba(0,0,0,0.4); /* 少し濃くする */
     border-radius: 8px;
-    font-size: 0.9em;
-    text-align: center;
+    font-size: 0.95em; /* 少し大きく */
+    text-align: left; /* 左寄せに */
     display: flex;
-    justify-content: center;
-    align-items: center;
+    justify-content: flex-start; /* コンテンツを左上から配置 */
+    align-items: flex-start;
+    line-height: 1.5; /* 行間を調整 */
+}
+
+#hint-area .yaku-hint {
+    color: #ffd700; /* ゴールド */
+    font-weight: bold;
+}
+
+#hint-area .yaku-progress-hint {
+    color: #98fb98; /* ペールグリーン */
 }
 
 .deck-area {
@@ -276,6 +315,17 @@ main {
     border-radius: 10px;
     position: relative;
 }
+
+#modal-yaku-cards .card.missing {
+    opacity: 0.5;
+    filter: grayscale(80%);
+}
+
+#modal-yaku-cards .card.owned {
+    border: 3px solid #ffd700; /* Gold border for owned cards */
+    box-shadow: 0 0 10px #ffd700;
+}
+
 
 .close-button {
     color: #aaa;

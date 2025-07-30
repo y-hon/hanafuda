@@ -169,13 +169,9 @@ function renderAllCards() {
     fieldCardsDiv.innerHTML = '';
     field.forEach(card => fieldCardsDiv.appendChild(createCardElement(card)));
 
-    // Captured
-    const pCapDiv = document.getElementById('player-captured-cards');
-    pCapDiv.innerHTML = '';
-    playerCapturedCards.forEach(card => pCapDiv.appendChild(createCardElement(card)));
-    const aiCapDiv = document.getElementById('ai-captured-cards');
-    aiCapDiv.innerHTML = '';
-    aiCapturedCards.forEach(card => aiCapDiv.appendChild(createCardElement(card)));
+    // Captured (Sorted)
+    renderCapturedCards('player-captured-cards', playerCapturedCards);
+    renderCapturedCards('ai-captured-cards', aiCapturedCards);
 
     // Deck
     const deckAreaDiv = document.getElementById('deck-area');
@@ -236,14 +232,22 @@ function showYakuModal(yakuKey) {
     document.getElementById('modal-yaku-points').textContent = `${yaku.points}点`;
     const cardContainer = document.getElementById('modal-yaku-cards');
     cardContainer.innerHTML = '';
+    const playerCardNames = playerCapturedCards.map(c => c.name);
 
     if (yaku.cards) {
         yaku.cards.forEach(cardName => {
             const cardData = HanafudaCards.find(c => c.name === cardName);
-            cardContainer.appendChild(createCardElement(cardData));
+            const cardEl = createCardElement(cardData);
+            if (playerCardNames.includes(cardName)) {
+                cardEl.classList.add('owned');
+            } else {
+                cardEl.classList.add('missing');
+            }
+            cardContainer.appendChild(cardEl);
         });
     } else {
-        document.getElementById('modal-yaku-points').textContent += ` (${yaku.type}を${yaku.count}枚)`;
+        const collectedCount = playerCapturedCards.filter(c => c.type === yaku.type).length;
+        document.getElementById('modal-yaku-points').textContent += ` (${yaku.type}を${yaku.count}枚) - 現在${collectedCount}枚`;
     }
 
     document.getElementById('yaku-modal').classList.remove('hidden');
@@ -259,6 +263,39 @@ function createCardElement(card, isBack = false) {
     if (isBack) el.classList.add('back');
     else { el.src = card.image; el.alt = card.name; el.dataset.id = card.id; }
     return el;
+}
+
+function renderCapturedCards(containerId, cards) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = ''; // Clear previous cards
+
+    const cardTypes = { 
+        hikari: "光札", 
+        tane: "タネ札", 
+        tanzaku: "短冊札", 
+        kasu: "カス札" 
+    };
+
+    for (const type in cardTypes) {
+        const groupContainer = document.createElement('div');
+        groupContainer.className = 'card-group';
+
+        const title = document.createElement('p');
+        title.className = 'group-title';
+        title.textContent = cardTypes[type];
+        groupContainer.appendChild(title);
+
+        const cardsOfType = cards.filter(card => card.type === type);
+        const cardsWrapper = document.createElement('div');
+        cardsWrapper.className = 'cards-wrapper';
+        cardsOfType.forEach(card => {
+            const cardEl = createCardElement(card);
+            cardsWrapper.appendChild(cardEl);
+        });
+        groupContainer.appendChild(cardsWrapper);
+
+        container.appendChild(groupContainer);
+    }
 }
 
 function updateScores() {
@@ -373,33 +410,43 @@ function highlightMatchingFieldCards(handCard) {
             }
         });
 
-        // Generate hint text
-        const potentialCards = [...playerCapturedCards, handCard, ...matchingFieldCards];
-        const currentYaku = checkYaku(playerCapturedCards).yaku;
-        const potentialYaku = checkYaku(potentialCards).yaku;
-        const newYaku = Object.keys(potentialYaku).filter(key => !currentYaku[key]);
+        // --- Enhanced Hint Generation ---
+        const potentialCaptured = [...matchingFieldCards, handCard];
+        const potentialTotalCards = [...playerCapturedCards, ...potentialCaptured];
+        const currentYakuResult = checkYaku(playerCapturedCards);
+        const potentialYakuResult = checkYaku(potentialTotalCards);
 
-        if (newYaku.length > 0) {
-            const yakuName = potentialYaku[newYaku[0]].name;
-            const yakuPoints = potentialYaku[newYaku[0]].points;
-            let hintText = `${yakuName} (${yakuPoints}点) に近づきます！`;
+        let hintText = `この札（${handCard.name}）を出すと、<br>場の【${matchingFieldCards.map(c => c.name).join('、')}】と合います。<br><br>`;
 
-            // For combination yaku, show missing cards
-            if (YakuDefinitions[newYaku[0]].cards) {
-                const requiredCards = YakuDefinitions[newYaku[0]].cards;
-                const collectedCards = potentialCards.map(c => c.name);
-                const missingCards = requiredCards.filter(cardName => !collectedCards.includes(cardName));
-                if (missingCards.length > 0) {
-                    hintText += ` (あと${missingCards.join('、')})`;
+        const newYakuEntries = Object.entries(potentialYakuResult.yaku).filter(([key, yaku]) => !currentYakuResult.yaku[key]);
+
+        if (newYakuEntries.length > 0) {
+            const [newYakuKey, newYaku] = newYakuEntries[0];
+            hintText += `<span class="yaku-hint">祝！『${newYaku.name}』(${newYaku.points}点) が完成します！</span>`;
+        } else {
+            let progressingYakuText = '';
+            const potentialYakuEntries = Object.entries(potentialYakuResult.yaku);
+
+            for (const [key, yaku] of potentialYakuEntries) {
+                if (yaku.cards) { // Combination Yaku
+                    const currentCollectedNames = playerCapturedCards.map(c => c.name);
+                    const potentialCollectedNames = potentialTotalCards.map(c => c.name);
+                    const currentCollectedCount = yaku.cards.filter(cName => currentCollectedNames.includes(cName)).length;
+                    const potentialCollectedCount = yaku.cards.filter(cName => potentialCollectedNames.includes(cName)).length;
+
+                    if (potentialCollectedCount > currentCollectedCount) {
+                        const missingCards = yaku.cards.filter(cardName => !potentialCollectedNames.includes(cardName));
+                        progressingYakuText += `『${yaku.name}』に近づきます！<br>(あと ${missingCards.length > 0 ? missingCards.join('、') : 'コンプリート！'})<br>`;
+                    }
                 }
             }
-            hintArea.textContent = hintText;
-        } else if (matchingFieldCards.length > 0) {
-            const matchedCardType = CardTypeDisplayNames[matchingFieldCards[0].type];
-            hintArea.textContent = `${matchedCardType}とペアが作れます。`;
-        } else {
-            hintArea.textContent = '場に出せるペアがありません';
+            if (progressingYakuText) {
+                hintText += `<span class="yaku-progress-hint">${progressingYakuText}</span>`;
+            } else {
+                hintText += `獲得できる札:<br>${potentialCaptured.map(c => `${c.name}(${CardTypeDisplayNames[c.type]})`).join('、')}`;
+            }
         }
+        hintArea.innerHTML = hintText;
 
     } else {
         hintArea.textContent = '場に出せるペアがありません';
