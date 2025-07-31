@@ -355,7 +355,7 @@ async function handleTurn(playedCard, capturedPile) {
     const result = checkYaku(capturedPile);
     const lastYakuCount = Object.keys(checkYaku(capturedPile.slice(0, -2)).yaku).length;
     if (result.points > 0 && Object.keys(result.yaku).length > lastYakuCount) {
-        showKoiKoiPrompt(result.points);
+        showKoiKoiPrompt(result); // Pass the whole result object
     } else {
         switchTurn();
     }
@@ -380,12 +380,51 @@ function switchTurn() {
     if (currentPlayer === 'ai') aiTurn();
 }
 
-function showKoiKoiPrompt(points) {
+function showKoiKoiPrompt(result) {
     if (currentPlayer === 'ai') {
-        if (points < 5) { isKoiKoi = true; switchTurn(); } else { endGame(); }
+        if (result.points < 5) { isKoiKoi = true; switchTurn(); } else { endGame(); }
         return;
     }
     const prompt = document.getElementById('koikoi-prompt');
+    const yakuInfoDiv = document.getElementById('koikoi-yaku-info');
+    const nextTargetDiv = document.getElementById('koikoi-next-target');
+
+    // 1. 成立した役を表示
+    yakuInfoDiv.innerHTML = '<h3>役が成立しました！</h3>';
+    const yakuList = document.createElement('ul');
+    for (const key in result.yaku) {
+        const yaku = result.yaku[key];
+        const li = document.createElement('li');
+        li.textContent = `${yaku.name} (${yaku.points}点)`;
+        yakuList.appendChild(li);
+    }
+    yakuInfoDiv.appendChild(yakuList);
+    yakuInfoDiv.innerHTML += `<p>合計: ${result.points}点</p>`;
+
+    // 2. 「こいこい」後の目標を提示
+    nextTargetDiv.innerHTML = '<h4>こいこいで狙える役</h4>';
+    const nextYakuList = document.createElement('ul');
+    let hintFound = false;
+    for (const key in YakuDefinitions) {
+        if (!result.yaku[key]) { // まだ成立していない役
+            const yaku = YakuDefinitions[key];
+            if (yaku.cards) { // 組み合わせ役
+                const playerCardNames = playerCapturedCards.map(c => c.name);
+                const missingCards = yaku.cards.filter(c => !playerCardNames.includes(c));
+                if (missingCards.length > 0 && missingCards.length <= 2) { // あと1-2枚で揃う役
+                    const li = document.createElement('li');
+                    li.textContent = `${yaku.name} (あと ${missingCards.join('、')})`;
+                    nextYakuList.appendChild(li);
+                    hintFound = true;
+                }
+            }
+        }
+    }
+    if (!hintFound) {
+        nextYakuList.innerHTML = '<li>さらに高い役を狙おう！</li>';
+    }
+    nextTargetDiv.appendChild(nextYakuList);
+
     prompt.classList.remove('hidden');
     document.getElementById('koikoi-button').onclick = () => { isKoiKoi = true; prompt.classList.add('hidden'); switchTurn(); };
     document.getElementById('shobu-button').onclick = () => { isKoiKoi = false; prompt.classList.add('hidden'); endGame(); };
@@ -394,13 +433,54 @@ function showKoiKoiPrompt(points) {
 function endGame() {
     const pResult = checkYaku(playerCapturedCards);
     const aiResult = checkYaku(aiCapturedCards);
-    let winnerMsg = "引き分け！";
-    if (pResult.points > aiResult.points) winnerMsg = `プレイヤーの勝利！ (${pResult.points}点)`;
-    if (aiResult.points > pResult.points) winnerMsg = `AIの勝利！ (${aiResult.points}点)`;
-    alert(`ゲーム終了！
+    const resultModal = document.getElementById('game-result-modal');
+    const resultTitle = document.getElementById('result-title');
+    const playerDetails = document.getElementById('player-result-details');
+    const aiDetails = document.getElementById('ai-result-details');
 
-${winnerMsg}`);
-    initializeGame();
+    let winnerMsg = "引き分け！";
+    if (pResult.points > aiResult.points) winnerMsg = `プレイヤーの勝利！`;
+    if (aiResult.points > pResult.points) winnerMsg = `AIの勝利！`;
+    resultTitle.textContent = winnerMsg;
+
+    // Render player's results
+    renderResultDetails(playerDetails, "Player", pResult, playerCapturedCards);
+    // Render AI's results
+    renderResultDetails(aiDetails, "AI", aiResult, aiCapturedCards);
+
+    resultModal.classList.remove('hidden');
+}
+
+function renderResultDetails(container, playerName, result, capturedCards) {
+    let html = `<h3>${playerName} (${result.points}点)</h3>`;
+    
+    const yakuCards = new Set();
+    if (Object.keys(result.yaku).length > 0) {
+        html += '<h4>成立した役</h4><ul>';
+        for (const key in result.yaku) {
+            const yaku = result.yaku[key];
+            html += `<li>${yaku.name} (${yaku.points}点)</li>`;
+            // Add cards that form the yaku to a set for highlighting
+            if (yaku.cards) {
+                yaku.cards.forEach(cardName => yakuCards.add(cardName));
+            }
+        }
+        html += '</ul>';
+    }
+
+    html += '<h4>獲得したカード</h4>';
+    const cardContainer = document.createElement('div');
+    cardContainer.className = 'cards-container';
+    capturedCards.forEach(card => {
+        const cardEl = createCardElement(card);
+        if (yakuCards.has(card.name)) {
+            cardEl.classList.add('yaku-component');
+        }
+        cardContainer.appendChild(cardEl);
+    });
+
+    container.innerHTML = html;
+    container.appendChild(cardContainer);
 }
 
 function checkGameOver() {
@@ -475,6 +555,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const showRulesButton = document.getElementById('show-rules');
     const rulesModal = document.getElementById('rules-modal');
     const rulesContent = document.getElementById('rules-content');
+    const newGameButton = document.getElementById('new-game-button');
+    const gameResultModal = document.getElementById('game-result-modal');
 
     showGameButton.addEventListener('click', () => {
         // ゲームをリセットして開始
@@ -502,6 +584,11 @@ document.addEventListener('DOMContentLoaded', () => {
         </ul>
         `;
         rulesModal.classList.remove('hidden');
+    });
+
+    newGameButton.addEventListener('click', () => {
+        gameResultModal.classList.add('hidden');
+        initializeGame();
     });
 
     initializeGame();

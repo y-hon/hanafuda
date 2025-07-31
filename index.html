@@ -26,10 +26,20 @@
                     <div id="yaku-list"></div>
                 </div>
             </div>
-            <div id="koikoi-prompt" class="hidden">
-                <p>役ができました！どうしますか？</p>
-                <button id="koikoi-button">こいこい</button>
-                <button id="shobu-button">勝負</button>
+            <div id="koikoi-prompt" class="modal hidden">
+                <div class="modal-content">
+                    <div id="koikoi-yaku-info">
+                        <!-- 成立した役がここに表示されます -->
+                    </div>
+                    <p>こいこいしますか？</p>
+                    <div class="koikoi-buttons">
+                        <button id="koikoi-button">こいこい</button>
+                        <button id="shobu-button">勝負</button>
+                    </div>
+                    <div id="koikoi-next-target" class="next-target-info">
+                        <!-- こいこい後のヒントがここに表示されます -->
+                    </div>
+                </div>
             </div>
             <div id="yaku-modal" class="modal hidden">
                 <div class="modal-content">
@@ -46,6 +56,17 @@
                     <div id="rules-content">
                         <!-- ルール説明のコンテンツがここに追加されます -->
                     </div>
+                </div>
+            </div>
+
+            <div id="game-result-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h2 id="result-title"></h2>
+                    <div class="result-container">
+                        <div id="player-result-details" class="result-details"></div>
+                        <div id="ai-result-details" class="result-details"></div>
+                    </div>
+                    <button id="new-game-button">新しいゲームを始める</button>
                 </div>
             </div>
         </section>
