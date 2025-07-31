@@ -302,6 +302,28 @@ main {
     font-weight: bold;
 }
 
+#turn-control-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 0;
+}
+
+#proceed-button {
+    padding: 8px 16px;
+    font-size: 1em;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+#proceed-button:hover {
+    background-color: #0056b3;
+}
+
 #hint-area .yaku-progress-hint {
     color: #98fb98; /* ペールグリーン */
 }

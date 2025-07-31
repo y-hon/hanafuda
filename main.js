@@ -137,6 +137,7 @@ function renderGameBoard() {
             <div id="action-log-area">
                 <div id="hint-area"></div>
             </div>
+            <div id="turn-control-area"></div>
             <div class="deck-area" id="deck-area"></div>
         </div>
         <div class="player-area" id="player-area">
@@ -378,14 +379,18 @@ async function handleTurn(playedCard, capturedPile) {
     renderYakuNavi();
 
     const result = checkYaku(capturedPile);
-    // Check if a new yaku was formed in this turn
     const previousCaptured = capturedPile.slice(0, capturedPile.length - (field.includes(playedCard) ? 1 : 2) - (field.includes(drawnCard) ? 1 : 2));
     const lastYakuCount = Object.keys(checkYaku(previousCaptured).yaku).length;
 
     if (result.points > 0 && Object.keys(result.yaku).length > lastYakuCount) {
         showKoiKoiPrompt(result);
     } else {
-        switchTurn();
+        // If it was the player's turn, show the button to proceed to AI's turn
+        if (playerType === 'player') {
+            showProceedToAiTurnButton();
+        } else {
+            switchTurn();
+        }
     }
 }
 
@@ -406,10 +411,29 @@ async function handleMatches(card, capturedPile, playerType) {
 
 function switchTurn() {
     if (checkGameOver()) { endGame(); return; }
+    
+    const turnControlArea = document.getElementById('turn-control-area');
+    turnControlArea.innerHTML = ''; // Clear the button
+
     currentPlayer = (currentPlayer === 'player') ? 'ai' : 'player';
-    logAction(`--- ${currentPlayer === 'player' ? 'あなた' : 'AI'}のターンです ---`, 'system');
+    logAction(`--- ${currentPlayer === 'player' ? 'あなたの' : 'AIの'}ターンです ---`, 'system');
     renderAllCards();
-    if (currentPlayer === 'ai') aiTurn();
+
+    if (currentPlayer === 'ai') {
+        aiTurn();
+    }
+}
+
+function showProceedToAiTurnButton() {
+    const turnControlArea = document.getElementById('turn-control-area');
+    const button = document.createElement('button');
+    button.textContent = 'AIのターンへ';
+    button.id = 'proceed-button';
+    button.onclick = () => {
+        switchTurn();
+    };
+    turnControlArea.innerHTML = ''; // Clear previous content
+    turnControlArea.appendChild(button);
 }
 
 function showKoiKoiPrompt(result) {
