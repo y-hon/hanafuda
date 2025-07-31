@@ -453,14 +453,14 @@ function endGame() {
 
 function renderResultDetails(container, playerName, result, capturedCards) {
     let html = `<h3>${playerName} (${result.points}点)</h3>`;
-    
     const yakuCards = new Set();
+
+    // 1. 成立した役の表示
     if (Object.keys(result.yaku).length > 0) {
         html += '<h4>成立した役</h4><ul>';
         for (const key in result.yaku) {
             const yaku = result.yaku[key];
             html += `<li>${yaku.name} (${yaku.points}点)</li>`;
-            // Add cards that form the yaku to a set for highlighting
             if (yaku.cards) {
                 yaku.cards.forEach(cardName => yakuCards.add(cardName));
             }
@@ -468,19 +468,53 @@ function renderResultDetails(container, playerName, result, capturedCards) {
         html += '</ul>';
     }
 
-    html += '<h4>獲得したカード</h4>';
-    const cardContainer = document.createElement('div');
-    cardContainer.className = 'cards-container';
-    capturedCards.forEach(card => {
-        const cardEl = createCardElement(card);
-        if (yakuCards.has(card.name)) {
-            cardEl.classList.add('yaku-component');
+    // 2. あと一歩だった役の表示
+    let almostYakuHtml = '';
+    for (const key in YakuDefinitions) {
+        if (!result.yaku[key]) { // まだ成立していない役
+            const yakuDef = YakuDefinitions[key];
+            const playerCardNames = capturedCards.map(c => c.name);
+            if (yakuDef.cards) { // 組み合わせ役
+                const missingCards = yakuDef.cards.filter(c => !playerCardNames.includes(c));
+                if (missingCards.length === 1) { // あと1枚！
+                    almostYakuHtml += `<li>${yakuDef.name} (あと<b>${missingCards.join('、')}</b>)</li>`;
+                }
+            }
         }
-        cardContainer.appendChild(cardEl);
-    });
+    }
+    if (almostYakuHtml) {
+        html += '<h4 class="almost-title">あと一歩だった役</h4><ul class="almost-yaku">' + almostYakuHtml + '</ul>';
+    }
 
     container.innerHTML = html;
-    container.appendChild(cardContainer);
+
+    // 3. 獲得カードを種類別に整理して表示
+    const capturedContainer = document.createElement('div');
+    capturedContainer.className = 'captured-cards-sorted';
+
+    const cardTypes = { hikari: "光", tane: "タネ", tanzaku: "短冊", kasu: "カス" };
+    for (const type in cardTypes) {
+        const groupContainer = document.createElement('div');
+        groupContainer.className = 'card-group';
+        const title = document.createElement('p');
+        title.className = 'group-title';
+        title.textContent = cardTypes[type];
+        groupContainer.appendChild(title);
+
+        const cardsWrapper = document.createElement('div');
+        cardsWrapper.className = 'cards-wrapper';
+        const cardsOfType = capturedCards.filter(card => card.type === type);
+        cardsOfType.forEach(card => {
+            const cardEl = createCardElement(card);
+            if (yakuCards.has(card.name)) {
+                cardEl.classList.add('yaku-component');
+            }
+            cardsWrapper.appendChild(cardEl);
+        });
+        groupContainer.appendChild(cardsWrapper);
+        capturedContainer.appendChild(groupContainer);
+    }
+    container.appendChild(capturedContainer);
 }
 
 function checkGameOver() {

@@ -54,12 +54,50 @@ nav button {
     margin-bottom: 10px;
 }
 
+.result-details h4.almost-title {
+    color: #6c757d; /* グレー */
+}
+
 .result-details ul {
     padding-left: 20px;
     margin-bottom: 15px;
 }
 
-.result-details .cards-container .card.yaku-component {
+.result-details ul.almost-yaku li {
+    font-size: 0.9em;
+    color: #333;
+}
+
+.captured-cards-sorted {
+    margin-top: 15px;
+}
+
+.captured-cards-sorted .card-group {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 5px;
+}
+
+.captured-cards-sorted .group-title {
+    width: 30px; /* タイトルの幅 */
+    flex-shrink: 0;
+    font-size: 0.8em;
+    font-weight: bold;
+    padding-top: 5px;
+}
+
+.captured-cards-sorted .cards-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.result-details .cards-wrapper .card {
+    width: 50px; /* カードを少し小さく */
+    height: 75px;
+}
+
+.result-details .cards-wrapper .card.yaku-component {
     border: 3px solid #dc3545; /* 役を構成したカードを赤枠で強調 */
     box-shadow: 0 0 10px #dc3545;
 }
