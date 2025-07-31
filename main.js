@@ -218,12 +218,26 @@ function renderYakuNavi() {
 }
 
 function setupModal() {
-    const modal = document.getElementById('yaku-modal');
-    const closeButton = document.querySelector('.close-button');
-    closeButton.onclick = closeModal;
-    window.onclick = (event) => {
-        if (event.target == modal) closeModal();
-    };
+    // すべてのモーダルを取得
+    const modals = document.querySelectorAll('.modal');
+
+    modals.forEach(modal => {
+        const closeButton = modal.querySelector('.close-button');
+
+        // 閉じるボタンのクリックイベント
+        if (closeButton) {
+            closeButton.onclick = function() {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // モーダル外のクリックイベント
+        window.addEventListener('click', function(event) {
+            if (event.target == modal) {
+                modal.classList.add('hidden');
+            }
+        });
+    });
 }
 
 function showYakuModal(yakuKey) {
@@ -253,9 +267,7 @@ function showYakuModal(yakuKey) {
     document.getElementById('yaku-modal').classList.remove('hidden');
 }
 
-function closeModal() {
-    document.getElementById('yaku-modal').classList.add('hidden');
-}
+
 
 function createCardElement(card, isBack = false) {
     const el = document.createElement(isBack ? 'div' : 'img');
@@ -459,39 +471,37 @@ function clearHighlights() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const gameSection = document.getElementById('game-section');
-    const rulesSection = document.getElementById('rules-section');
     const showGameButton = document.getElementById('show-game');
     const showRulesButton = document.getElementById('show-rules');
+    const rulesModal = document.getElementById('rules-modal');
+    const rulesContent = document.getElementById('rules-content');
 
     showGameButton.addEventListener('click', () => {
-        gameSection.classList.remove('hidden');
-        rulesSection.classList.add('hidden');
+        // ゲームをリセットして開始
         initializeGame();
     });
 
     showRulesButton.addEventListener('click', () => {
-        gameSection.classList.add('hidden');
-        rulesSection.classList.remove('hidden');
-        if (!document.getElementById('rules-content').innerHTML.trim()) {
-            document.getElementById('rules-content').innerHTML = `
-            <h3>こいこいルール概要</h3>
-            <p>花札のこいこいは、手札と場札を合わせて役を作り、得点を競うゲームです。</p>
-            <h4>主な役</h4>
-            <ul>
-                <li><b>五光 (10点)</b>: 光札5枚</li>
-                <li><b>四光 (8点)</b>: 光札4枚（「柳に小野道風」を除く）</li>
-                <li><b>雨四光 (7点)</b>: 光札4枚（「柳に小野道風」を含む）</li>
-                <li><b>三光 (5点)</b>: 光札3枚（「柳に小野道風」を除く）</li>
-                <li><b>猪鹿蝶 (5点)</b>: 猪、鹿、蝶の3枚</li>
-                <li><b>赤短 (6点)</b>: 松、梅、桜の赤短冊3枚</li>
-                <li><b>青短 (6点)</b>: 牡丹、菊、紅葉の青短冊3枚</li>
-                <li><b>短冊 (1点)</b>: 短冊5枚。以降1枚ごとに+1点</li>
-                <li><b>タネ (1点)</b>: タネ札5枚。以降1枚ごとに+1点</li>
-                <li><b>カス (1点)</b>: カス札10枚。以降1枚ごとに+1点</li>
-            </ul>
+        // if文を削除し、常にルールを書き込む
+        rulesContent.innerHTML = `
+        <h2>ルール説明</h2>
+        <h3>こいこいルール概要</h3>
+        <p>花札のこいこいは、手札と場札を合わせて役を作り、得点を競うゲームです。</p>
+        <h4>主な役</h4>
+        <ul>
+            <li><b>五光 (10点)</b>: 光札5枚</li>
+            <li><b>四光 (8点)</b>: 光札4枚（「柳に小野道風」を除く）</li>
+            <li><b>雨四光 (7点)</b>: 光札4枚（「柳に小野道風」を含む）</li>
+            <li><b>三光 (5点)</b>: 光札3枚（「柳に小野道風」を除く）</li>
+            <li><b>猪鹿蝶 (5点)</b>: 猪、鹿、蝶の3枚</li>
+            <li><b>赤短 (6点)</b>: 松、梅、桜の赤短冊3枚</li>
+            <li><b>青短 (6点)</b>: 牡丹、菊、紅葉の青短冊3枚</li>
+            <li><b>短冊 (1点)</b>: 短冊5枚。以降1枚ごとに+1点</li>
+            <li><b>タネ (1点)</b>: タネ札5枚。以降1枚ごとに+1点</li>
+            <li><b>カス (1点)</b>: カス札10枚。以降1枚ごとに+1点</li>
+        </ul>
         `;
-        }
+        rulesModal.classList.remove('hidden');
     });
 
     initializeGame();

@@ -304,14 +304,27 @@ main {
     background-color: rgba(0,0,0,0.6);
 }
 
+#rules-content ul {
+    list-style: none;
+    padding-left: 15px;
+}
+
+#rules-content li {
+    margin-bottom: 8px;
+}
+
+#rules-content h2, #rules-content h3, #rules-content h4 {
+    margin-bottom: 10px;
+}
+
 .modal-content {
     background-color: #fefefe;
     color: #333;
-    margin: 15% auto;
-    padding: 20px;
+    margin: 10% auto; /* 上マージンを調整 */
+    padding: 25px;
     border: 1px solid #888;
-    width: 80%;
-    max-width: 500px;
+    width: 90%;
+    max-width: 600px; /* 幅を少し広げる */
     border-radius: 10px;
     position: relative;
 }
