@@ -134,8 +134,9 @@ function renderGameBoard() {
         </div>
         <div class="field-area">
             <div class="cards-container field-cards" id="field-cards"></div>
-            <div id="action-log-area">
+            <div id="center-info-area">
                 <div id="hint-area"></div>
+                <div id="action-log-area"></div>
             </div>
             <div id="turn-control-area"></div>
             <div class="deck-area" id="deck-area"></div>
@@ -349,9 +350,6 @@ function logAction(message, type = 'system') {
 function clearLog() {
     const logArea = document.getElementById('action-log-area');
     logArea.innerHTML = '';
-    const hintArea = document.createElement('div');
-    hintArea.id = 'hint-area';
-    logArea.appendChild(hintArea);
 }
 
 async function handleTurn(playedCard, capturedPile) {
@@ -598,13 +596,13 @@ function highlightMatchingFieldCards(handCard) {
         const currentYakuResult = checkYaku(playerCapturedCards);
         const potentialYakuResult = checkYaku(potentialTotalCards);
 
-        let hintText = `この札（${handCard.name}）を出すと、<br>場の【${matchingFieldCards.map(c => c.name).join('、')}】と合います。<br><br>`;
+        let fullHintText = `この札（${handCard.name}）を出すと、<br>場の【${matchingFieldCards.map(c => c.name).join('、')}】と合います。<br><br>`;
 
         const newYakuEntries = Object.entries(potentialYakuResult.yaku).filter(([key, yaku]) => !currentYakuResult.yaku[key]);
 
         if (newYakuEntries.length > 0) {
             const [newYakuKey, newYaku] = newYakuEntries[0];
-            hintText += `<span class="yaku-hint">祝！『${newYaku.name}』(${newYaku.points}点) が完成します！</span>`;
+            fullHintText += `<span class="yaku-hint">祝！『${newYaku.name}』(${newYaku.points}点) が完成します！</span>`;
         } else {
             let progressingYakuText = '';
             const potentialYakuEntries = Object.entries(potentialYakuResult.yaku);
@@ -623,12 +621,23 @@ function highlightMatchingFieldCards(handCard) {
                 }
             }
             if (progressingYakuText) {
-                hintText += `<span class="yaku-progress-hint">${progressingYakuText}</span>`;
+                fullHintText += `<span class="yaku-progress-hint">${progressingYakuText}</span>`;
             } else {
-                hintText += `獲得できる札:<br>${potentialCaptured.map(c => `${c.name}(${CardTypeDisplayNames[c.type]})`).join('、')}`;
+                fullHintText += `獲得できる札:<br>${potentialCaptured.map(c => `${c.name}(${CardTypeDisplayNames[c.type]})`).join('、')}`;
             }
         }
-        hintArea.innerHTML = hintText;
+
+        // Check if full hint is too long for the small area
+        const SHORT_HINT_MAX_LENGTH = 100; // Adjust as needed
+        if (fullHintText.length > SHORT_HINT_MAX_LENGTH) {
+            hintArea.innerHTML = `この札を出すと役が進展します。<br><button id="show-full-hint-button">詳細を見る</button>`;
+            document.getElementById('show-full-hint-button').onclick = () => {
+                document.getElementById('full-hint-content').innerHTML = fullHintText;
+                document.getElementById('full-hint-modal').classList.remove('hidden');
+            };
+        } else {
+            hintArea.innerHTML = fullHintText;
+        }
 
     } else {
         hintArea.textContent = '場に出せるペアがありません';
@@ -637,7 +646,7 @@ function highlightMatchingFieldCards(handCard) {
 
 function clearHighlights() {
     document.querySelectorAll('.card.highlight').forEach(c => c.classList.remove('highlight'));
-    document.getElementById('hint-area').textContent = '';
+    document.getElementById('hint-area').innerHTML = ''; // Clear hint text
 }
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -267,17 +267,41 @@ main {
     padding: 8px;
 }
 
-#action-log-area {
-    width: 220px;
-    height: 140px;
+#center-info-area {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+    width: 280px; /* 幅をさらに広げる */
     flex-shrink: 0;
+    height: 300px; /* 高さを調整 */
+}
+
+#hint-area {
+    height: 100px; /* ヒントエリアの高さ */
+    background-color: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    padding: 10px;
+    box-sizing: border-box;
+    font-size: 0.95em;
+    line-height: 1.5;
+    color: #fff;
+    overflow-wrap: break-word;
+    overflow: hidden; /* スクロールバーを非表示にする */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* コンテンツとボタンを上下に配置 */
+}
+
+#action-log-area {
+    height: 150px; /* ログエリアの高さ */
     background-color: rgba(0,0,0,0.4);
     border-radius: 8px;
     padding: 10px;
     box-sizing: border-box;
-    overflow-y: auto; /* Enable scrolling for logs */
+    overflow-y: auto;
     display: flex;
-    flex-direction: column-reverse; /* Show latest log at the bottom */
+    flex-direction: column-reverse;
 }
 
 #action-log-area p {
@@ -286,20 +310,17 @@ main {
     line-height: 1.4;
 }
 
-#action-log-area .log-player { color: #98fb98; /* Light green */ }
-#action-log-area .log-ai { color: #f08080; /* Light coral */ }
+#action-log-area .log-player { color: #98fb98; }
+#action-log-area .log-ai { color: #f08080; }
 #action-log-area .log-system { color: #aaa; text-align: center; font-style: italic; }
 
-#hint-area {
-    margin-top: auto; /* Push hint area to the top (due to flex-direction-reverse) */
-    width: 100%;
-    color: #fff;
-    text-align: left;
+#hint-area .yaku-hint {
+    color: #ffd700;
+    font-weight: bold;
 }
 
-#hint-area .yaku-hint {
-    color: #ffd700; /* ゴールド */
-    font-weight: bold;
+#hint-area .yaku-progress-hint {
+    color: #98fb98;
 }
 
 #turn-control-area {
@@ -307,6 +328,64 @@ main {
     justify-content: center;
     align-items: center;
     padding: 10px 0;
+}
+
+#show-full-hint-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 0.8em;
+    align-self: flex-end; /* ボタンを右下に配置 */
+    margin-top: 5px;
+}
+
+#show-full-hint-button:hover {
+    background-color: #0056b3;
+}
+
+#full-hint-modal .modal-content {
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+#full-hint-content {
+    margin-top: 15px;
+    line-height: 1.6;
+    font-size: 1em;
+    color: #333;
+}
+
+#show-full-hint-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 0.8em;
+    align-self: flex-end; /* ボタンを右下に配置 */
+    margin-top: 5px;
+}
+
+#show-full-hint-button:hover {
+    background-color: #0056b3;
+}
+
+#full-hint-modal .modal-content {
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+#full-hint-content {
+    margin-top: 15px;
+    line-height: 1.6;
+    font-size: 1em;
+    color: #333;
 }
 
 #proceed-button {
