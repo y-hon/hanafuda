@@ -267,20 +267,34 @@ main {
     padding: 8px;
 }
 
-#hint-area {
-    width: 220px; /* 幅を広げる */
-    height: 140px; /* 高さを広げる */
+#action-log-area {
+    width: 220px;
+    height: 140px;
     flex-shrink: 0;
-    padding: 12px;
-    box-sizing: border-box;
-    background-color: rgba(0,0,0,0.4); /* 少し濃くする */
+    background-color: rgba(0,0,0,0.4);
     border-radius: 8px;
-    font-size: 0.95em; /* 少し大きく */
-    text-align: left; /* 左寄せに */
+    padding: 10px;
+    box-sizing: border-box;
+    overflow-y: auto; /* Enable scrolling for logs */
     display: flex;
-    justify-content: flex-start; /* コンテンツを左上から配置 */
-    align-items: flex-start;
-    line-height: 1.5; /* 行間を調整 */
+    flex-direction: column-reverse; /* Show latest log at the bottom */
+}
+
+#action-log-area p {
+    margin: 0 0 5px 0;
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+#action-log-area .log-player { color: #98fb98; /* Light green */ }
+#action-log-area .log-ai { color: #f08080; /* Light coral */ }
+#action-log-area .log-system { color: #aaa; text-align: center; font-style: italic; }
+
+#hint-area {
+    margin-top: auto; /* Push hint area to the top (due to flex-direction-reverse) */
+    width: 100%;
+    color: #fff;
+    text-align: left;
 }
 
 #hint-area .yaku-hint {

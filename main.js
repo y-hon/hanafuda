@@ -128,19 +128,21 @@ function initializeGame() {
 function renderGameBoard() {
     const gameBoard = document.getElementById('game-board');
     gameBoard.innerHTML = `
-        <div class="player-area">
+        <div class="player-area" id="ai-area">
             <div class="info"><h3>AI (<span id="ai-hand-count">${aiHand.length}</span>)</h3><p>得点: <span id="ai-score">0</span></p><div id="ai-yaku" class="yaku-display"></div></div>
-            <div class="cards-container" id="ai-captured-cards"></div>
+            <div class="cards-container captured-cards" id="ai-captured-cards"></div>
         </div>
         <div class="field-area">
             <div class="cards-container field-cards" id="field-cards"></div>
-            <div id="hint-area"></div>
+            <div id="action-log-area">
+                <div id="hint-area"></div>
+            </div>
             <div class="deck-area" id="deck-area"></div>
         </div>
-        <div class="player-area">
+        <div class="player-area" id="player-area">
             <div class="info"><h3>Player (<span id="player-hand-count">${playerHand.length}</span>)</h3><p>得点: <span id="player-score">0</span></p><div id="player-yaku" class="yaku-display"></div></div>
             <div class="cards-container hand-cards" id="player-hand"></div>
-            <div class="cards-container" id="player-captured-cards"></div>
+            <div class="cards-container captured-cards" id="player-captured-cards"></div>
         </div>
     `;
     renderAllCards();
@@ -334,40 +336,69 @@ async function aiTurn() {
     await handleTurn(cardToPlay, aiCapturedCards);
 }
 
+function logAction(message, type = 'system') {
+    const logArea = document.getElementById('action-log-area');
+    const p = document.createElement('p');
+    p.innerHTML = message; // Use innerHTML to allow basic formatting
+    p.className = `log-${type}`;
+    logArea.appendChild(p);
+    logArea.scrollTop = logArea.scrollHeight; // Auto-scroll to the latest log
+}
+
+function clearLog() {
+    const logArea = document.getElementById('action-log-area');
+    logArea.innerHTML = '';
+    const hintArea = document.createElement('div');
+    hintArea.id = 'hint-area';
+    logArea.appendChild(hintArea);
+}
+
 async function handleTurn(playedCard, capturedPile) {
+    clearLog();
+    const playerName = (capturedPile === playerCapturedCards) ? "あなた" : "AI";
+    const playerType = (capturedPile === playerCapturedCards) ? "player" : "ai";
+
+    logAction(`<b>${playerName}</b> は「${playedCard.name}」を出しました。`, playerType);
     field.push(playedCard);
     renderAllCards();
     await new Promise(r => setTimeout(r, 500));
 
-    await handleMatches(playedCard, capturedPile);
+    await handleMatches(playedCard, capturedPile, playerType);
 
     const drawnCard = deck.pop();
     if (drawnCard) {
+        logAction(`<b>${playerName}</b> は山札から「${drawnCard.name}」を引きました。`, playerType);
         field.push(drawnCard);
         renderAllCards();
         await new Promise(r => setTimeout(r, 500));
-        await handleMatches(drawnCard, capturedPile);
+        await handleMatches(drawnCard, capturedPile, playerType);
     }
 
     updateScores();
     renderYakuNavi();
 
     const result = checkYaku(capturedPile);
-    const lastYakuCount = Object.keys(checkYaku(capturedPile.slice(0, -2)).yaku).length;
+    // Check if a new yaku was formed in this turn
+    const previousCaptured = capturedPile.slice(0, capturedPile.length - (field.includes(playedCard) ? 1 : 2) - (field.includes(drawnCard) ? 1 : 2));
+    const lastYakuCount = Object.keys(checkYaku(previousCaptured).yaku).length;
+
     if (result.points > 0 && Object.keys(result.yaku).length > lastYakuCount) {
-        showKoiKoiPrompt(result); // Pass the whole result object
+        showKoiKoiPrompt(result);
     } else {
         switchTurn();
     }
 }
 
-async function handleMatches(card, capturedPile) {
+async function handleMatches(card, capturedPile, playerType) {
     const matchingCards = field.filter(c => c.month === card.month && c.id !== card.id);
     if (matchingCards.length > 0) {
         const match = matchingCards[0]; // Simplification
+        logAction(`場の「${match.name}」と合い、獲得しました。`, playerType);
         field.splice(field.indexOf(card), 1);
         field.splice(field.indexOf(match), 1);
         capturedPile.push(card, match);
+    } else {
+        logAction('場の札とは合いませんでした。', playerType);
     }
     renderAllCards();
     await new Promise(r => setTimeout(r, 500));
@@ -376,6 +407,7 @@ async function handleMatches(card, capturedPile) {
 function switchTurn() {
     if (checkGameOver()) { endGame(); return; }
     currentPlayer = (currentPlayer === 'player') ? 'ai' : 'player';
+    logAction(`--- ${currentPlayer === 'player' ? 'あなた' : 'AI'}のターンです ---`, 'system');
     renderAllCards();
     if (currentPlayer === 'ai') aiTurn();
 }
