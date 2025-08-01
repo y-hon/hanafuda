@@ -214,25 +214,26 @@ main {
 
 .captured-cards {
     display: flex;
-    flex-direction: column; /* グループを縦に並べる */
-    gap: 5px;
+    flex-direction: row; /* 横方向に並べる */
+    flex-wrap: wrap;      /* エリアの幅に応じて折り返す */
+    align-content: flex-start; /* 折り返した要素を上から詰める */
+    gap: 10px;            /* グループ間の隙間 */
     flex-grow: 1;
 }
 
 .card-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
     background-color: rgba(0,0,0,0.1);
     border-radius: 5px;
-    padding: 5px;
+    padding: 8px;
+    /* display: flex; を削除し、タイトルとカードが縦に並ぶようにする */
 }
 
 .group-title {
     font-size: 0.8em;
     font-weight: bold;
-    width: 20px; /* タイトルの幅を固定 */
-    text-align: center;
+    margin: 0 0 5px 0; /* タイトルの下に余白を追加 */
+    /* 固定幅を削除し、テキストを左揃えにする */
+    text-align: left;
 }
 
 .cards-wrapper {
@@ -258,6 +259,12 @@ main {
 
 .hand-cards {
     min-height: 100px;
+    transition: opacity 0.3s;
+}
+
+.hand-cards.disabled {
+    pointer-events: none;
+    opacity: 0.6;
 }
 
 .field-cards {
@@ -278,7 +285,7 @@ main {
 }
 
 #hint-area {
-    height: 100px; /* ヒントエリアの高さ */
+    height: 180px; /* ヒントエリアの高さ */
     background-color: rgba(0,0,0,0.3);
     border-radius: 8px;
     padding: 10px;
@@ -287,21 +294,18 @@ main {
     line-height: 1.5;
     color: #fff;
     overflow-wrap: break-word;
-    overflow: hidden; /* スクロールバーを非表示にする */
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between; /* コンテンツとボタンを上下に配置 */
+    overflow-y: auto; /* スクロールバーを有効化 */
+    display: block; /* flexからblockへ変更 */
 }
 
 #action-log-area {
-    height: 150px; /* ログエリアの高さ */
+    height: 110px; /* ログエリアの高さ */
     background-color: rgba(0,0,0,0.4);
     border-radius: 8px;
     padding: 10px;
     box-sizing: border-box;
     overflow-y: auto;
-    display: flex;
-    flex-direction: column-reverse;
+    /* flex-direction: column-reverse を削除し、時系列順(上が古い)に変更 */
 }
 
 #action-log-area p {
@@ -575,4 +579,17 @@ main {
     color: black;
     text-decoration: none;
     cursor: pointer;
+}
+
+#card-choice-modal .modal-content {
+    text-align: center;
+}
+
+#choice-cards-container .card {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+#choice-cards-container .card:hover {
+    transform: scale(1.05);
 }

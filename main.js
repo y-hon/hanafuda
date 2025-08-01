@@ -57,6 +57,8 @@ const YakuDefinitions = {
     shiko: { name: "四光", points: 8, cards: ["松に鶴", "桜に幕", "芒に月", "桐に鳳凰"] },
     ameshiko: { name: "雨四光", points: 7, cards: ["松に鶴", "桜に幕", "芒に月", "柳に小野道風"] },
     sanko: { name: "三光", points: 5, cards: ["松に鶴", "桜に幕", "芒に月"] },
+    hanami: { name: "花見で一杯", points: 5, cards: ["桜に幕", "菊に盃"] },
+    tsukimi: { name: "月見で一杯", points: 5, cards: ["芒に月", "菊に盃"] },
     inoshikacho: { name: "猪鹿蝶", points: 5, cards: ["萩に猪", "紅葉に鹿", "牡丹に蝶"] },
     akatan: { name: "赤短", points: 6, cards: ["松に赤短", "梅に赤短", "桜に赤短"] },
     aotan: { name: "青短", points: 6, cards: ["牡丹に青短", "菊に青短", "紅葉に青短"] },
@@ -72,7 +74,12 @@ function checkYaku(cards) {
     const names = cards.map(c => c.name);
     const types = cards.map(c => c.type);
 
-    // Hikari Yaku (Light Cards)
+    // --- 役の判定ロジック ---
+    // 複合役（花見・月見）を先にチェック
+    if (YakuDefinitions.hanami.cards.every(c => names.includes(c))) yaku.hanami = YakuDefinitions.hanami;
+    if (YakuDefinitions.tsukimi.cards.every(c => names.includes(c))) yaku.tsukimi = YakuDefinitions.tsukimi;
+
+    // 光札の役
     const hikariCards = cards.filter(c => c.type === 'hikari');
     const hasRainMan = hikariCards.some(c => c.name === "柳に小野道風");
 
@@ -80,25 +87,37 @@ function checkYaku(cards) {
         yaku.goko = YakuDefinitions.goko;
     } else if (hikariCards.length === 4) {
         if (hasRainMan) {
-            yaku.ameshiko = YakuDefinitions.ameshiko;
+            // 雨四光が成立しても、花見・月見が成立していればそちらを優先
+            if (!yaku.hanami && !yaku.tsukimi) yaku.ameshiko = YakuDefinitions.ameshiko;
         } else {
             yaku.shiko = YakuDefinitions.shiko;
         }
     } else if (hikariCards.length === 3 && !hasRainMan) {
-        yaku.sanko = YakuDefinitions.sanko;
+        // 三光が成立しても、花見・月見が成立していればそちらを優先
+        if (!yaku.hanami && !yaku.tsukimi) yaku.sanko = YakuDefinitions.sanko;
     }
 
-    // Other combination yaku
+    // その他の組み合わせ役
     if (YakuDefinitions.inoshikacho.cards.every(c => names.includes(c))) yaku.inoshikacho = YakuDefinitions.inoshikacho;
     if (YakuDefinitions.akatan.cards.every(c => names.includes(c))) yaku.akatan = YakuDefinitions.akatan;
     if (YakuDefinitions.aotan.cards.every(c => names.includes(c))) yaku.aotan = YakuDefinitions.aotan;
 
-    // Count-based yaku
+    // 枚数での役
     const tanzakuCount = types.filter(t => t === 'tanzaku').length;
-    if (tanzakuCount >= 5) yaku.tanzaku = { ...YakuDefinitions.tanzaku, points: 1 + (tanzakuCount - 5) };
+    if (tanzakuCount >= 5) {
+        // 赤短・青短と重複させない
+        if (!yaku.akatan && !yaku.aotan) {
+            yaku.tanzaku = { ...YakuDefinitions.tanzaku, points: 1 + (tanzakuCount - 5) };
+        }
+    }
 
     const taneCount = types.filter(t => t === 'tane').length;
-    if (taneCount >= 5) yaku.tane = { ...YakuDefinitions.tane, points: 1 + (taneCount - 5) };
+    if (taneCount >= 5) {
+        // 猪鹿蝶と重複させない
+        if (!yaku.inoshikacho) {
+            yaku.tane = { ...YakuDefinitions.tane, points: 1 + (taneCount - 5) };
+        }
+    }
 
     const kasuCount = types.filter(t => t === 'kasu').length;
     if (kasuCount >= 10) yaku.kasu = { ...YakuDefinitions.kasu, points: 1 + (kasuCount - 10) };
@@ -109,7 +128,7 @@ function checkYaku(cards) {
 
 
 // Game State
-let deck, field, playerHand, aiHand, playerCapturedCards, aiCapturedCards, currentPlayer, isKoiKoi;
+let deck, field, playerHand, aiHand, playerCapturedCards, aiCapturedCards, currentPlayer, isKoiKoi, hintClearTimeout;
 
 function initializeGame() {
     deck = [...HanafudaCards].sort(() => Math.random() - 0.5);
@@ -149,6 +168,11 @@ function renderGameBoard() {
     `;
     renderAllCards();
     updateScores();
+
+    // イベントリスナーをここで設定
+    const hintArea = document.getElementById('hint-area');
+    hintArea.addEventListener('mouseenter', () => clearTimeout(hintClearTimeout));
+    hintArea.addEventListener('mouseleave', () => clearHighlights());
 }
 
 function renderAllCards() {
@@ -238,7 +262,10 @@ function setupModal() {
         // モーダル外のクリックイベント
         window.addEventListener('click', function(event) {
             if (event.target == modal) {
-                modal.classList.add('hidden');
+                // card-choice-modalは外側クリックで閉じない
+                if (modal.id !== 'card-choice-modal') {
+                    modal.classList.add('hidden');
+                }
             }
         });
     });
@@ -326,6 +353,8 @@ function updateScores() {
 
 async function playPlayerCard(card) {
     if (currentPlayer !== 'player') return;
+    // 他のカードが選択できないようにする
+    document.getElementById('player-hand').classList.add('disabled');
     const idx = playerHand.findIndex(c => c.id === card.id);
     if (idx > -1) await handleTurn(playerHand.splice(idx, 1)[0], playerCapturedCards);
 }
@@ -358,19 +387,21 @@ async function handleTurn(playedCard, capturedPile) {
     const playerType = (capturedPile === playerCapturedCards) ? "player" : "ai";
 
     logAction(`<b>${playerName}</b> は「${playedCard.name}」を出しました。`, playerType);
-    field.push(playedCard);
+    
+    // playedCardはまだ場に出さず、手元に保持
     renderAllCards();
     await new Promise(r => setTimeout(r, 500));
 
-    await handleMatches(playedCard, capturedPile, playerType);
+    // 1. 手札から出した札でのマッチ処理
+    await handleMatches(playedCard, capturedPile, playerType, true);
 
     const drawnCard = deck.pop();
     if (drawnCard) {
         logAction(`<b>${playerName}</b> は山札から「${drawnCard.name}」を引きました。`, playerType);
-        field.push(drawnCard);
-        renderAllCards();
         await new Promise(r => setTimeout(r, 500));
-        await handleMatches(drawnCard, capturedPile, playerType);
+        
+        // 2. 山札から引いた札でのマッチ処理
+        await handleMatches(drawnCard, capturedPile, playerType, false);
     }
 
     updateScores();
@@ -383,7 +414,10 @@ async function handleTurn(playedCard, capturedPile) {
     if (result.points > 0 && Object.keys(result.yaku).length > lastYakuCount) {
         showKoiKoiPrompt(result);
     } else {
-        // If it was the player's turn, show the button to proceed to AI's turn
+        if (checkGameOver()) {
+            endGame();
+            return;
+        }
         if (playerType === 'player') {
             showProceedToAiTurnButton();
         } else {
@@ -392,20 +426,71 @@ async function handleTurn(playedCard, capturedPile) {
     }
 }
 
-async function handleMatches(card, capturedPile, playerType) {
-    const matchingCards = field.filter(c => c.month === card.month && c.id !== card.id);
-    if (matchingCards.length > 0) {
-        const match = matchingCards[0]; // Simplification
-        logAction(`場の「${match.name}」と合い、獲得しました。`, playerType);
-        field.splice(field.indexOf(card), 1);
-        field.splice(field.indexOf(match), 1);
-        capturedPile.push(card, match);
-    } else {
-        logAction('場の札とは合いませんでした。', playerType);
+async function handleMatches(card, capturedPile, playerType, isFromHand) {
+    const matchingCards = field.filter(c => c.month === card.month);
+
+    switch (matchingCards.length) {
+        case 0:
+            logAction('場の札とは合いませんでした。', playerType);
+            field.push(card); // 合わなかった札は場札になる
+            break;
+        
+        case 1: {
+            const match = matchingCards[0];
+            logAction(`場の「${match.name}」と合い、獲得しました。`, playerType);
+            field.splice(field.indexOf(match), 1);
+            capturedPile.push(card, match);
+            break;
+        }
+
+        case 2: {
+            logAction(`場の札と合いました。どちらを獲得しますか？`, playerType);
+            let chosenCard;
+            if (playerType === 'player') {
+                chosenCard = await showCardChoiceModal(matchingCards);
+            } else {
+                // AIはランダムに選択
+                chosenCard = matchingCards[Math.floor(Math.random() * matchingCards.length)];
+                await new Promise(r => setTimeout(r, 500)); // AIの思考時間
+            }
+            logAction(`<b>${playerType === 'player' ? 'あなた' : 'AI'}</b> は「${chosenCard.name}」を選択しました。`, playerType);
+            field.splice(field.indexOf(chosenCard), 1);
+            capturedPile.push(card, chosenCard);
+            break;
+        }
+
+        case 3: {
+            logAction(`場の同じ月の札3枚と合い、<b>4枚すべて</b>獲得しました！`, playerType);
+            matchingCards.forEach(match => {
+                field.splice(field.indexOf(match), 1);
+            });
+            capturedPile.push(card, ...matchingCards);
+            break;
+        }
     }
     renderAllCards();
     await new Promise(r => setTimeout(r, 500));
 }
+
+function showCardChoiceModal(choices) {
+    return new Promise(resolve => {
+        const modal = document.getElementById('card-choice-modal');
+        const container = document.getElementById('choice-cards-container');
+        container.innerHTML = '';
+
+        choices.forEach(card => {
+            const cardEl = createCardElement(card);
+            cardEl.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                resolve(card); // 選択されたカードを返す
+            });
+            container.appendChild(cardEl);
+        });
+
+        modal.classList.remove('hidden');
+    });
+}
+
 
 function switchTurn() {
     if (checkGameOver()) { endGame(); return; }
@@ -415,6 +500,12 @@ function switchTurn() {
 
     currentPlayer = (currentPlayer === 'player') ? 'ai' : 'player';
     logAction(`--- ${currentPlayer === 'player' ? 'あなたの' : 'AIの'}ターンです ---`, 'system');
+    
+    // プレイヤーのターンになったら手札をクリック可能にする
+    if (currentPlayer === 'player') {
+        document.getElementById('player-hand').classList.remove('disabled');
+    }
+
     renderAllCards();
 
     if (currentPlayer === 'ai') {
@@ -576,7 +667,9 @@ function checkGameOver() {
 }
 
 function highlightMatchingFieldCards(handCard) {
-    clearHighlights();
+    clearTimeout(hintClearTimeout); // 既存のタイマーをクリア
+    clearHighlights(true); // ハイライトだけ先にクリア
+
     const hintArea = document.getElementById('hint-area');
     const fieldCardsDiv = document.getElementById('field-cards');
     const matchingFieldCards = field.filter(c => c.month === handCard.month);
@@ -627,26 +720,20 @@ function highlightMatchingFieldCards(handCard) {
             }
         }
 
-        // Check if full hint is too long for the small area
-        const SHORT_HINT_MAX_LENGTH = 100; // Adjust as needed
-        if (fullHintText.length > SHORT_HINT_MAX_LENGTH) {
-            hintArea.innerHTML = `この札を出すと役が進展します。<br><button id="show-full-hint-button">詳細を見る</button>`;
-            document.getElementById('show-full-hint-button').onclick = () => {
-                document.getElementById('full-hint-content').innerHTML = fullHintText;
-                document.getElementById('full-hint-modal').classList.remove('hidden');
-            };
-        } else {
-            hintArea.innerHTML = fullHintText;
-        }
+        hintArea.innerHTML = fullHintText;
 
     } else {
         hintArea.textContent = '場に出せるペアがありません';
     }
 }
 
-function clearHighlights() {
+function clearHighlights(keepHint = false) {
     document.querySelectorAll('.card.highlight').forEach(c => c.classList.remove('highlight'));
-    document.getElementById('hint-area').innerHTML = ''; // Clear hint text
+    if (!keepHint) {
+        hintClearTimeout = setTimeout(() => {
+            document.getElementById('hint-area').innerHTML = ''; // Clear hint text
+        }, 300); // 0.3秒後にヒントを消す
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -663,17 +750,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     showRulesButton.addEventListener('click', () => {
-        // if文を削除し、常にルールを書き込む
         rulesContent.innerHTML = `
         <h2>ルール説明</h2>
         <h3>こいこいルール概要</h3>
         <p>花札のこいこいは、手札と場札を合わせて役を作り、得点を競うゲームです。</p>
+        <h4>札の合わせ方</h4>
+        <ul>
+            <li>手札から1枚選び、場に出します。</li>
+            <li>同じ月の札が場にあれば、その札を獲得できます。</li>
+            <li><b>場に同じ月の札が2枚ある場合：</b>好きな方を選んで獲得できます。</li>
+            <li><b>場に同じ月の札が3枚ある場合：</b>手札の1枚と合わせて4枚すべてを獲得できます。</li>
+            <li>その後、山札から1枚めくり、同様に場の札と合わせます。</li>
+        </ul>
         <h4>主な役</h4>
         <ul>
             <li><b>五光 (10点)</b>: 光札5枚</li>
             <li><b>四光 (8点)</b>: 光札4枚（「柳に小野道風」を除く）</li>
             <li><b>雨四光 (7点)</b>: 光札4枚（「柳に小野道風」を含む）</li>
             <li><b>三光 (5点)</b>: 光札3枚（「柳に小野道風」を除く）</li>
+            <li><b>花見で一杯 (5点)</b>: 「桜に幕」と「菊に盃」</li>
+            <li><b>月見で一杯 (5点)</b>: 「芒に月」と「菊に盃」</li>
             <li><b>猪鹿蝶 (5点)</b>: 猪、鹿、蝶の3枚</li>
             <li><b>赤短 (6点)</b>: 松、梅、桜の赤短冊3枚</li>
             <li><b>青短 (6点)</b>: 牡丹、菊、紅葉の青短冊3枚</li>
