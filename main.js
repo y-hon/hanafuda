@@ -156,12 +156,14 @@ function renderGameBoard() {
         </div>
         <div class="field-area">
             <div class="cards-container field-cards" id="field-cards"></div>
-            <div id="center-info-area">
-                <div id="hint-area"></div>
-                <div id="action-log-area"></div>
+            <div id="field-sidebar">
+                <div class="deck-area" id="deck-area"></div>
+                <div id="turn-control-area"></div>
+                <div id="center-info-area">
+                    <div id="hint-area"></div>
+                    <div id="action-log-area"></div>
+                </div>
             </div>
-            <div id="turn-control-area"></div>
-            <div class="deck-area" id="deck-area"></div>
         </div>
         <div class="player-area" id="player-area">
             <div class="info"><h3>Player (<span id="player-hand-count">${playerHand.length}</span>)</h3><p>得点: <span id="player-score">0</span></p><div id="player-yaku" class="yaku-display"></div></div>

@@ -294,10 +294,9 @@ main {
 }
 
 .field-area {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: flex; /* メインエリアとサイドバーを横並びにする */
     gap: 20px;
+    align-items: stretch; /* 高さを揃える */
 }
 
 .cards-container {
@@ -319,24 +318,28 @@ main {
 }
 
 .field-cards {
-    flex-grow: 1;
+    flex-grow: 1; /* 残りのスペースをすべて使う */
     border: 2px dashed rgba(255,255,255,0.3);
     min-height: 100px;
-    padding: 8px;
+    padding: 10px;
+}
+
+#field-sidebar {
+    width: 280px; /* サイドバーの幅を固定 */
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 #center-info-area {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 10px;
-    width: 280px; /* 幅をさらに広げる */
-    flex-shrink: 0;
-    height: 300px; /* 高さを調整 */
+    width: 100%;
+    height: auto; /* 高さを自動調整に */
+    order: 3; /* 表示順を一番下にする */
 }
 
 #hint-area {
-    height: 180px; /* ヒントエリアの高さ */
+    height: 140px; /* ヒントエリアの高さ */
     background-color: rgba(0,0,0,0.3);
     border-radius: 8px;
     padding: 10px;
@@ -350,7 +353,7 @@ main {
 }
 
 #action-log-area {
-    height: 110px; /* ログエリアの高さ */
+    height: 150px; /* ログエリアの高さ */
     background-color: rgba(0,0,0,0.4);
     border-radius: 8px;
     padding: 10px;
@@ -382,7 +385,8 @@ main {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 10px 0;
+    padding: 0; /* パディングをリセット */
+    order: 2; /* 表示順を中央に */
 }
 
 #show-full-hint-button {
@@ -444,14 +448,15 @@ main {
 }
 
 #proceed-button {
-    padding: 8px 16px;
-    font-size: 1em;
+    padding: 10px 20px; /* ボタンを大きくする */
+    font-size: 1.1em;
     cursor: pointer;
     background-color: #007bff;
     color: white;
     border: none;
     border-radius: 5px;
     transition: background-color 0.3s;
+    width: 100%; /* 幅を100%にする */
 }
 
 #proceed-button:hover {
@@ -466,10 +471,8 @@ main {
     display: flex;
     justify-content: center;
     align-items: center;
-}
-
-.captured-area {
-    display: none; /* 新レイアウトでは一旦非表示 */
+    order: 1; /* 表示順を一番上にする */
+    min-height: 100px; /* 最小高さを設定 */
 }
 
 .card {
