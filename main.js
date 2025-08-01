@@ -140,7 +140,7 @@ function initializeGame() {
     currentPlayer = 'player';
     isKoiKoi = false;
     renderGameBoard();
-    renderYakuNavi();
+    renderRecommendedYaku(); // 旧renderYakuNaviから変更
     setupModal();
 }
 
@@ -187,7 +187,7 @@ function renderAllCards() {
             el.classList.add('playable');
             el.addEventListener('click', () => playPlayerCard(card));
             el.addEventListener('mouseover', () => highlightMatchingFieldCards(card));
-            el.addEventListener('mouseout', clearHighlights);
+            el.addEventListener('mouseout', () => clearHighlights());
         }
         playerHandDiv.appendChild(el);
     });
@@ -211,37 +211,91 @@ function renderAllCards() {
     }
 }
 
-function renderYakuNavi() {
-    const yakuList = document.getElementById('yaku-list');
-    yakuList.innerHTML = '';
+function renderRecommendedYaku() {
+    const yakuListDiv = document.getElementById('yaku-list');
+    yakuListDiv.innerHTML = '';
     const playerCardNames = playerCapturedCards.map(c => c.name);
+    const currentYaku = checkYaku(playerCapturedCards).yaku;
 
+    let recommendations = [];
+
+    // 1. 組み合わせ役をチェック
     for (const key in YakuDefinitions) {
         const yaku = YakuDefinitions[key];
-        const item = document.createElement('div');
-        item.className = 'yaku-item';
-        item.onclick = () => showYakuModal(key);
-
-        let progress = 0;
-        let isCompleted = false;
-
-        if (yaku.cards) { // Combination yaku
+        if (yaku.cards && !currentYaku[key]) { // 成立してない組み合わせ役のみ
             const collected = yaku.cards.filter(c => playerCardNames.includes(c));
-            progress = (collected.length / yaku.cards.length) * 100;
-            if (progress >= 100) isCompleted = true;
-        } else { // Count yaku
-            const count = playerCapturedCards.filter(c => c.type === yaku.type).length;
-            progress = (count / yaku.count) * 100;
-            if (progress >= 100) isCompleted = true;
+            const missingCount = yaku.cards.length - collected.length;
+            if (missingCount > 0 && missingCount <= 2) { // あと1-2枚
+                recommendations.push({ key, yaku, missingCount, priority: missingCount });
+            }
         }
+    }
 
-        item.innerHTML = `
-            <span>${yaku.name} (${yaku.points}点)</span>
-            <div class="progress-bar"><div class="progress" style="width: ${progress}%;"></div></div>
-        `;
-        if (isCompleted) item.classList.add('completed');
+    // 2. 枚数役をチェック (あと2枚以内)
+    ['tane', 'tanzaku', 'kasu'].forEach(type => {
+        const yaku = YakuDefinitions[type];
+        const count = playerCapturedCards.filter(c => c.type === type).length;
+        const missingCount = yaku.count - count;
+        if (count < yaku.count && missingCount <= 2) {
+            recommendations.push({ key: type, yaku, missingCount, priority: missingCount + 0.5 }); // 組み合わせ役を少し優先
+        }
+    });
 
-        yakuList.appendChild(item);
+    // 優先度でソートし、上位2件を取得
+    recommendations.sort((a, b) => a.priority - b.priority);
+    const topRecommendations = recommendations.slice(0, 2);
+
+    // 表示と場のカードのハイライト
+    document.querySelectorAll('.target-card').forEach(c => c.classList.remove('target-card'));
+
+    if (topRecommendations.length > 0) {
+        topRecommendations.forEach(rec => {
+            const item = document.createElement('div');
+            item.className = 'recommended-yaku-item';
+
+            let html = `<h4>${rec.yaku.name} (${rec.yaku.points}点)</h4>`;
+            html += `<p>あと${rec.missingCount}枚</p>`;
+            html += `<div class="cards-container">`;
+
+            if (rec.yaku.cards) { // 組み合わせ役
+                rec.yaku.cards.forEach(cardName => {
+                    const cardData = HanafudaCards.find(c => c.name === cardName);
+                    const isOwned = playerCardNames.includes(cardName);
+                    html += createCardHtml(cardData, !isOwned);
+
+                    // 足りないカードが場にあるかチェック
+                    if (!isOwned) {
+                        const fieldCard = field.find(c => c.name === cardName);
+                        if (fieldCard) {
+                            highlightTargetCard(fieldCard);
+                        }
+                    }
+                });
+            } else { // 枚数役
+                html += `<p>${CardTypeDisplayNames[rec.yaku.type]}を集めよう</p>`;
+                // 場の同種カードをハイライト
+                field.filter(c => c.type === rec.yaku.type).forEach(highlightTargetCard);
+            }
+
+            html += `</div>`;
+            item.innerHTML = html;
+            yakuListDiv.appendChild(item);
+        });
+    } else {
+        yakuListDiv.innerHTML = '<p>まずは場の札と合う手札を出して、札を集めていきましょう。</p>';
+    }
+}
+
+function createCardHtml(card, isMissing) {
+    return `<img src="${card.image}" alt="${card.name}" class="card ${isMissing ? 'missing' : ''}">`;
+}
+
+function highlightTargetCard(card) {
+    const fieldCardsDiv = document.getElementById('field-cards');
+    for (const el of fieldCardsDiv.children) {
+        if (el.dataset.id == card.id) {
+            el.classList.add('target-card');
+        }
     }
 }
 
@@ -405,7 +459,7 @@ async function handleTurn(playedCard, capturedPile) {
     }
 
     updateScores();
-    renderYakuNavi();
+    renderRecommendedYaku();
 
     const result = checkYaku(capturedPile);
     const previousCaptured = capturedPile.slice(0, capturedPile.length - (field.includes(playedCard) ? 1 : 2) - (field.includes(drawnCard) ? 1 : 2));
