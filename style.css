@@ -161,9 +161,9 @@ main {
     flex-grow: 1;
     display: grid;
     grid-template-rows: auto 1fr auto;
-    gap: 20px;
+    gap: 15px; /* 縦の隙間を狭く */
     width: 100%;
-    height: calc(100vh - 150px); /* ヘッダー等を考慮した高さ */
+    height: calc(100vh - 180px); /* 全体の高さを少し低く */
 }
 
 #yaku-navi {
@@ -173,7 +173,7 @@ main {
     border-radius: 10px;
     padding: 15px;
     box-sizing: border-box;
-    height: calc(100vh - 150px);
+    height: calc(100vh - 180px); /* 全体の高さに合わせて調整 */
     overflow-y: auto;
 }
 
@@ -249,7 +249,7 @@ main {
 .player-area, .field-area {
     background-color: rgba(0,0,0,0.2);
     border-radius: 10px;
-    padding: 15px;
+    padding: 12px; /* パディングを少し狭く */
     box-sizing: border-box;
     display: flex; /* player-areaもflexに */
     gap: 15px;
