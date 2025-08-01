@@ -68,6 +68,9 @@ const YakuDefinitions = {
 };
 
 const CardTypeDisplayNames = { hikari: "光札", tane: "タネ札", tanzaku: "短冊札", kasu: "カス札" };
+const CardValues = { hikari: 4, tane: 3, tanzaku: 2, kasu: 1 };
+
+let aiLevel = 'weak'; // Default AI level
 
 function checkYaku(cards) {
     const yaku = {};
@@ -416,10 +419,76 @@ async function playPlayerCard(card) {
 async function aiTurn() {
     if (currentPlayer !== 'ai') return;
     await new Promise(r => setTimeout(r, 1000));
-    const cardToPlay = aiHand[Math.floor(Math.random() * aiHand.length)];
+
+    let cardToPlay;
+    switch (aiLevel) {
+        case 'normal':
+            cardToPlay = getNormalAiMove();
+            break;
+        case 'strong':
+            cardToPlay = getStrongAiMove();
+            break;
+        case 'weak':
+        default:
+            cardToPlay = aiHand[Math.floor(Math.random() * aiHand.length)];
+            break;
+    }
+
     aiHand.splice(aiHand.indexOf(cardToPlay), 1);
     await handleTurn(cardToPlay, aiCapturedCards);
 }
+
+function getNormalAiMove() {
+    let bestMove = { card: null, value: -1 };
+
+    for (const handCard of aiHand) {
+        const matchingFieldCards = field.filter(c => c.month === handCard.month);
+        if (matchingFieldCards.length > 0) {
+            // 最も価値の高い場の札を選ぶ
+            const bestFieldCard = matchingFieldCards.reduce((best, current) => 
+                CardValues[current.type] > CardValues[best.type] ? current : best
+            );
+            const moveValue = CardValues[handCard.type] + CardValues[bestFieldCard.type];
+            if (moveValue > bestMove.value) {
+                bestMove = { card: handCard, value: moveValue };
+            }
+        } else {
+            // 場に合う札がない場合、価値の低い札を出す
+            if (bestMove.card === null || CardValues[handCard.type] < CardValues[bestMove.card.type]) {
+                bestMove = { card: handCard, value: -1 }; // 価値は低いので-1のまま
+            }
+        }
+    }
+    return bestMove.card || aiHand[Math.floor(Math.random() * aiHand.length)];
+}
+
+function getStrongAiMove() {
+    let bestMove = { card: null, score: -1, type: 'none' };
+
+    // 1. 役が完成する手を探す
+    for (const handCard of aiHand) {
+        const matchingFieldCards = field.filter(c => c.month === handCard.month);
+        for (const fieldCard of matchingFieldCards.length > 0 ? matchingFieldCards : [null]) {
+            const potentialCaptured = fieldCard ? [handCard, fieldCard] : [handCard];
+            const potentialYaku = checkYaku([...aiCapturedCards, ...potentialCaptured]);
+            const currentYaku = checkYaku(aiCapturedCards);
+            const newScore = potentialYaku.points - currentYaku.points;
+
+            if (newScore > 0 && newScore > bestMove.score) {
+                bestMove = { card: handCard, score: newScore, type: 'yaku_complete' };
+            }
+        }
+    }
+    if (bestMove.card) return bestMove.card;
+
+    // 2. プレイヤーの役を妨害する手を探す
+    // (プレイヤーのおすすめ役に必要なカードが場にある場合、それを取る)
+    // ... このロジックは複雑なので、今回はまず自分の役を優先する
+
+    // 3. 役にはならないが、価値の高いカードを取る（Normal AIと同じ）
+    return getNormalAiMove();
+}
+
 
 function logAction(message, type = 'system') {
     const logArea = document.getElementById('action-log-area');
@@ -797,6 +866,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const rulesContent = document.getElementById('rules-content');
     const newGameButton = document.getElementById('new-game-button');
     const gameResultModal = document.getElementById('game-result-modal');
+    const aiLevelSelect = document.getElementById('ai-level-select');
+
+    aiLevelSelect.addEventListener('change', (e) => {
+        aiLevel = e.target.value;
+        // ゲーム中にAIの強さを変えたら、新しいゲームを始める
+        initializeGame();
+    });
 
     showGameButton.addEventListener('click', () => {
         // ゲームをリセットして開始

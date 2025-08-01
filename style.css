@@ -31,6 +31,22 @@ nav button {
     border-radius: 5px;
 }
 
+.ai-level-selector {
+    display: inline-block;
+    margin-left: 20px;
+}
+
+.ai-level-selector label {
+    margin-right: 5px;
+}
+
+.ai-level-selector select {
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+}
+
 #game-result-modal .modal-content {
     max-width: 800px; /* 幅を広げる */
 }
