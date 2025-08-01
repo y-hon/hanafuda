@@ -161,6 +161,41 @@ main {
     overflow-y: auto;
 }
 
+#yaku-navi h3 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.recommended-yaku-item {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+}
+
+.recommended-yaku-item h4 {
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+    color: #ffd700; /* Gold color for the title */
+}
+
+.recommended-yaku-item .cards-container .card {
+    width: 50px;
+    height: 75px;
+    margin-right: 4px;
+}
+
+.recommended-yaku-item .card.missing {
+    opacity: 0.4;
+    filter: grayscale(100%);
+}
+
+.field-cards .card.target-card {
+    box-shadow: 0 0 15px 5px #00aaff; /* Bright blue glow */
+    border: 2px solid #00aaff;
+}
+
 #yaku-list .yaku-item {
     padding: 8px;
     margin-bottom: 5px;
