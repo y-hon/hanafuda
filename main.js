@@ -315,6 +315,23 @@ function renderRecommendedYaku() {
     document.querySelectorAll('.target-card').forEach(c => c.classList.remove('target-card'));
 
     if (topRecommendations.length > 0) {
+        // 青ハイライトはプレイヤーのターンのみ表示
+        if (currentPlayer === 'player') {
+            topRecommendations.forEach(rec => {
+                if (rec.yaku.cards) { // 組み合わせ役
+                    rec.yaku.cards.forEach(cardName => {
+                        const isOwned = playerCardNames.includes(cardName);
+                        if (!isOwned) {
+                            const fieldCard = field.find(c => c.name === cardName);
+                            if (fieldCard) highlightTargetCard(fieldCard);
+                        }
+                    });
+                } else { // 枚数役
+                    field.filter(c => c.type === rec.yaku.type).forEach(highlightTargetCard);
+                }
+            });
+        }
+
         topRecommendations.forEach(rec => {
             const item = document.createElement('div');
             item.className = 'recommended-yaku-item';
@@ -328,15 +345,9 @@ function renderRecommendedYaku() {
                     const cardData = HanafudaCards.find(c => c.name === cardName);
                     const isOwned = playerCardNames.includes(cardName);
                     html += createCardHtml(cardData, !isOwned);
-
-                    if (!isOwned) {
-                        const fieldCard = field.find(c => c.name === cardName);
-                        if (fieldCard) highlightTargetCard(fieldCard);
-                    }
                 });
             } else { // 枚数役
                 html += `<p>${CardTypeDisplayNames[rec.yaku.type]}を集めよう</p>`;
-                field.filter(c => c.type === rec.yaku.type).forEach(highlightTargetCard);
             }
 
             html += `</div>`;
@@ -587,7 +598,8 @@ async function handleTurn(playedCard, capturedPile) {
     }
 
     updateScores();
-    renderRecommendedYaku();
+    // 役ナビの更新は、プレイヤーのターン開始時に移動
+    // renderRecommendedYaku(); 
 
     const result = checkYaku(capturedPile);
     const previousCaptured = capturedPile.slice(0, capturedPile.length - (field.includes(playedCard) ? 1 : 2) - (field.includes(drawnCard) ? 1 : 2));
@@ -680,12 +692,16 @@ function switchTurn() {
     const turnControlArea = document.getElementById('turn-control-area');
     turnControlArea.innerHTML = ''; // Clear the button
 
+    // ターンが切り替わる際に、場のターゲットハイライトを消す
+    document.querySelectorAll('.target-card').forEach(c => c.classList.remove('target-card'));
+
     currentPlayer = (currentPlayer === 'player') ? 'ai' : 'player';
     logAction(`--- ${currentPlayer === 'player' ? 'あなたの' : 'AIの'}ターンです ---`, 'system');
     
-    // プレイヤーのターンになったら手札をクリック可能にする
+    // プレイヤーのターンになったら手札をクリック可能にし、役ナビを更新してヒントを再表示
     if (currentPlayer === 'player') {
         document.getElementById('player-hand').classList.remove('disabled');
+        renderRecommendedYaku();
     }
 
     renderAllCards();
