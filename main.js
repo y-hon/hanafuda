@@ -257,6 +257,7 @@ function renderRecommendedYaku() {
     const yakuListDiv = document.getElementById('yaku-list');
     yakuListDiv.innerHTML = '';
     const playerCardNames = playerCapturedCards.map(c => c.name);
+    const aiCardNames = aiCapturedCards.map(c => c.name); // AIの獲得カードを取得
     const currentYaku = checkYaku(playerCapturedCards).yaku;
 
     let recommendations = [];
@@ -268,14 +269,19 @@ function renderRecommendedYaku() {
         if (currentYaku[key]) continue; // 既に成立している役は除外
 
         if (yaku.cards) { // ■■■ 組み合わせ役のロジック ■■■
-            const collectedCards = yaku.cards.filter(c => playerCardNames.includes(c));
             const missingCards = yaku.cards.filter(c => !playerCardNames.includes(c));
+            
+            // ★★★ 新しいチェック：AIにキーカードを取られていたら、その役は実現不可能
+            const isImpossible = missingCards.some(cardName => aiCardNames.includes(cardName));
+            if (isImpossible) {
+                continue; // この役は候補から外す
+            }
+
+            const collectedCards = yaku.cards.filter(c => playerCardNames.includes(c));
             const missingCount = missingCards.length;
 
             if (missingCount > 0 && missingCount <= 3) { // あと3枚以内
-                // 候補とする条件：集めた札が1枚以上ある、または、足りない札のどれかが場にある
                 const isReachable = (collectedCards.length > 0) || missingCards.some(cardName => field.some(fieldCard => fieldCard.name === cardName));
-
                 if (isReachable) {
                     const score = yaku.points / missingCount;
                     recommendations.push({ key, yaku, missingCount, score });
