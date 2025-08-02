@@ -132,6 +132,8 @@ function checkYaku(cards) {
 
 // Game State
 let deck, field, playerHand, aiHand, playerCapturedCards, aiCapturedCards, currentPlayer, isKoiKoi, hintClearTimeout;
+let playerKoiKoi = false;
+let aiKoiKoi = false;
 
 function initializeGame() {
     deck = [...HanafudaCards].sort(() => Math.random() - 0.5);
@@ -142,9 +144,44 @@ function initializeGame() {
     aiCapturedCards = [];
     currentPlayer = 'player';
     isKoiKoi = false;
+    playerKoiKoi = false;
+    aiKoiKoi = false;
+
     renderGameBoard();
-    renderRecommendedYaku(); // 旧renderYakuNaviから変更
+    renderRecommendedYaku();
     setupModal();
+
+    // 手役のチェック
+    const initialYaku = checkInitialHands();
+    if (initialYaku.player) {
+        endGame(initialYaku.player, "Player");
+    } else if (initialYaku.ai) {
+        endGame(initialYaku.ai, "AI");
+    }
+}
+
+function checkInitialHands() {
+    const checkHand = (hand) => {
+        const monthCounts = hand.reduce((acc, card) => {
+            acc[card.month] = (acc[card.month] || 0) + 1;
+            return acc;
+        }, {});
+
+        // 手四のチェック
+        if (Object.values(monthCounts).some(count => count === 4)) {
+            return { name: "手四", points: 6 };
+        }
+
+        // くっつきのチェック
+        const pairs = Object.values(monthCounts).filter(count => count === 2).length;
+        if (pairs === 4) {
+            return { name: "くっつき", points: 6 };
+        }
+
+        return null;
+    };
+
+    return { player: checkHand(playerHand), ai: checkHand(aiHand) };
 }
 
 function renderGameBoard() {
@@ -652,7 +689,13 @@ function showProceedToAiTurnButton() {
 
 function showKoiKoiPrompt(result) {
     if (currentPlayer === 'ai') {
-        if (result.points < 5) { isKoiKoi = true; switchTurn(); } else { endGame(); }
+        if (result.points < 5) { 
+            isKoiKoi = true; 
+            aiKoiKoi = true;
+            switchTurn(); 
+        } else { 
+            endGame(); 
+        }
         return;
     }
     const prompt = document.getElementById('koikoi-prompt');
@@ -696,22 +739,51 @@ function showKoiKoiPrompt(result) {
     nextTargetDiv.appendChild(nextYakuList);
 
     prompt.classList.remove('hidden');
-    document.getElementById('koikoi-button').onclick = () => { isKoiKoi = true; prompt.classList.add('hidden'); switchTurn(); };
-    document.getElementById('shobu-button').onclick = () => { isKoiKoi = false; prompt.classList.add('hidden'); endGame(); };
+    document.getElementById('koikoi-button').onclick = () => { 
+        isKoiKoi = true; 
+        playerKoiKoi = true;
+        prompt.classList.add('hidden'); 
+        switchTurn(); 
+    };
+    document.getElementById('shobu-button').onclick = () => { 
+        isKoiKoi = false; 
+        prompt.classList.add('hidden'); 
+        endGame(); 
+    };
 }
 
-function endGame() {
-    const pResult = checkYaku(playerCapturedCards);
-    const aiResult = checkYaku(aiCapturedCards);
+function endGame(initialYaku = null, winnerName = null) {
+    let pResult = checkYaku(playerCapturedCards);
+    let aiResult = checkYaku(aiCapturedCards);
     const resultModal = document.getElementById('game-result-modal');
     const resultTitle = document.getElementById('result-title');
     const playerDetails = document.getElementById('player-result-details');
     const aiDetails = document.getElementById('ai-result-details');
+    const extraInfo = document.getElementById('result-extra-info');
+    extraInfo.innerHTML = '';
 
-    let winnerMsg = "引き分け！";
-    if (pResult.points > aiResult.points) winnerMsg = `プレイヤーの勝利！`;
-    if (aiResult.points > pResult.points) winnerMsg = `AIの勝利！`;
-    resultTitle.textContent = winnerMsg;
+    if (initialYaku) {
+        resultTitle.textContent = `${winnerName}の勝利！`;
+        extraInfo.innerHTML = `手役『${initialYaku.name}』成立（${initialYaku.points}点）`;
+        if (winnerName === 'Player') {
+            pResult = { yaku: { [initialYaku.name.toLowerCase()]: initialYaku }, points: initialYaku.points };
+        } else {
+            aiResult = { yaku: { [initialYaku.name.toLowerCase()]: initialYaku }, points: initialYaku.points };
+        }
+    } else {
+        let winnerMsg = "引き分け！";
+        if (playerKoiKoi && aiResult.points > 0) {
+            aiResult.points *= 2;
+            extraInfo.innerHTML = 'プレイヤーがこいこい後、AIが上がったため得点2倍！';
+        } else if (aiKoiKoi && pResult.points > 0) {
+            pResult.points *= 2;
+            extraInfo.innerHTML = 'AIがこいこい後、プレイヤーが上がったため得点2倍！';
+        }
+
+        if (pResult.points > aiResult.points) winnerMsg = `プレイヤーの勝利！`;
+        if (aiResult.points > pResult.points) winnerMsg = `AIの勝利！`;
+        resultTitle.textContent = winnerMsg;
+    }
 
     // Render player's results
     renderResultDetails(playerDetails, "Player", pResult, playerCapturedCards);
@@ -886,13 +958,20 @@ document.addEventListener('DOMContentLoaded', () => {
         <h2>ルール説明</h2>
         <h3>こいこいルール概要</h3>
         <p>花札のこいこいは、手札と場札を合わせて役を作り、得点を競うゲームです。</p>
-        <h4>札の合わせ方</h4>
+        <h4>ゲームの流れ</h4>
         <ul>
-            <li>手札から1枚選び、場に出します。</li>
-            <li>同じ月の札が場にあれば、その札を獲得できます。</li>
+            <li>手札から1枚選び、場に出します。同じ月の札が場にあれば、合わせて獲得できます。</li>
             <li><b>場に同じ月の札が2枚ある場合：</b>好きな方を選んで獲得できます。</li>
             <li><b>場に同じ月の札が3枚ある場合：</b>手札の1枚と合わせて4枚すべてを獲得できます。</li>
             <li>その後、山札から1枚めくり、同様に場の札と合わせます。</li>
+            <li>役が成立したら、「こいこい」をしてゲームを続けるか、「勝負」してゲームを終了するか選択できます。</li>
+            <li><b>こいこいのリスク：</b>自分が「こいこい」を宣言した後に、相手が先に役を完成させて上がった場合、相手の得点は2倍になります。</li>
+        </ul>
+        <h4>特殊な役（手役）</h4>
+        <p>ゲーム開始時の手札だけで成立する役です。成立した場合、その時点で勝ちとなり点数を得ます。</p>
+        <ul>
+            <li><b>手四（てし）：</b>同じ月の札が4枚ある（6点）</li>
+            <li><b>くっつき：</b>同じ月の札2枚のペアが4組ある（6点）</li>
         </ul>
         <h4>主な役</h4>
         <ul>

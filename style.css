@@ -51,6 +51,14 @@ nav button {
     max-width: 800px; /* 幅を広げる */
 }
 
+.result-extra-info {
+    text-align: center;
+    margin: 10px 0;
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #dc3545; /* 赤色で強調 */
+}
+
 .result-container {
     display: flex;
     justify-content: space-around;
