@@ -261,33 +261,51 @@ function renderRecommendedYaku() {
 
     let recommendations = [];
 
-    // 1. 組み合わせ役をチェック
+    // 1. すべての潜在的な役をリストアップ
     for (const key in YakuDefinitions) {
+        if (key === 'kasu') continue; // カス役は推奨しない
         const yaku = YakuDefinitions[key];
-        if (yaku.cards && !currentYaku[key]) { // 成立してない組み合わせ役のみ
-            const collected = yaku.cards.filter(c => playerCardNames.includes(c));
-            const missingCount = yaku.cards.length - collected.length;
-            if (missingCount > 0 && missingCount <= 2) { // あと1-2枚
-                recommendations.push({ key, yaku, missingCount, priority: missingCount });
+        if (currentYaku[key]) continue; // 既に成立している役は除外
+
+        if (yaku.cards) { // ■■■ 組み合わせ役のロジック ■■■
+            const collectedCards = yaku.cards.filter(c => playerCardNames.includes(c));
+            const missingCards = yaku.cards.filter(c => !playerCardNames.includes(c));
+            const missingCount = missingCards.length;
+
+            if (missingCount > 0 && missingCount <= 3) { // あと3枚以内
+                // 候補とする条件：集めた札が1枚以上ある、または、足りない札のどれかが場にある
+                const isReachable = (collectedCards.length > 0) || missingCards.some(cardName => field.some(fieldCard => fieldCard.name === cardName));
+
+                if (isReachable) {
+                    const score = yaku.points / missingCount;
+                    recommendations.push({ key, yaku, missingCount, score });
+                }
+            }
+        } else { // ■■■ 枚数役のロジック ■■■
+            const collectedCount = playerCapturedCards.filter(c => c.type === yaku.type).length;
+            const missingCount = yaku.count - collectedCount;
+
+            if (missingCount > 0 && missingCount <= 2) { // 枚数役はあと2枚以内のみ推奨
+                 const score = yaku.points / missingCount;
+                 recommendations.push({ key, yaku, missingCount, score });
             }
         }
     }
 
-    // 2. 枚数役をチェック (あと2枚以内)
-    ['tane', 'tanzaku', 'kasu'].forEach(type => {
-        const yaku = YakuDefinitions[type];
-        const count = playerCapturedCards.filter(c => c.type === type).length;
-        const missingCount = yaku.count - count;
-        if (count < yaku.count && missingCount <= 2) {
-            recommendations.push({ key: type, yaku, missingCount, priority: missingCount + 0.5 }); // 組み合わせ役を少し優先
-        }
-    });
+    // 2. 重複・下位役を除外
+    const recKeys = recommendations.map(r => r.key);
+    if (recKeys.includes('inoshikacho')) {
+        recommendations = recommendations.filter(r => r.key !== 'tane');
+    }
+    if (recKeys.includes('akatan') || recKeys.includes('aotan')) {
+        recommendations = recommendations.filter(r => r.key !== 'tanzaku');
+    }
 
-    // 優先度でソートし、上位2件を取得
-    recommendations.sort((a, b) => a.priority - b.priority);
+    // 3. スコアでソートし、上位2件を取得
+    recommendations.sort((a, b) => b.score - a.score);
     const topRecommendations = recommendations.slice(0, 2);
 
-    // 表示と場のカードのハイライト
+    // 4. 表示と場のカードのハイライト
     document.querySelectorAll('.target-card').forEach(c => c.classList.remove('target-card'));
 
     if (topRecommendations.length > 0) {
@@ -296,7 +314,7 @@ function renderRecommendedYaku() {
             item.className = 'recommended-yaku-item';
 
             let html = `<h4>${rec.yaku.name} (${rec.yaku.points}点)</h4>`;
-            html += `<p>あと${rec.missingCount}枚</p>`;
+            html += `<p>あと${rec.missingCount}枚 (推奨スコア: ${rec.score.toFixed(1)})</p>`;
             html += `<div class="cards-container">`;
 
             if (rec.yaku.cards) { // 組み合わせ役
@@ -305,17 +323,13 @@ function renderRecommendedYaku() {
                     const isOwned = playerCardNames.includes(cardName);
                     html += createCardHtml(cardData, !isOwned);
 
-                    // 足りないカードが場にあるかチェック
                     if (!isOwned) {
                         const fieldCard = field.find(c => c.name === cardName);
-                        if (fieldCard) {
-                            highlightTargetCard(fieldCard);
-                        }
+                        if (fieldCard) highlightTargetCard(fieldCard);
                     }
                 });
             } else { // 枚数役
                 html += `<p>${CardTypeDisplayNames[rec.yaku.type]}を集めよう</p>`;
-                // 場の同種カードをハイライト
                 field.filter(c => c.type === rec.yaku.type).forEach(highlightTargetCard);
             }
 
