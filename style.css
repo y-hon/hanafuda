@@ -163,6 +163,7 @@ main {
 #game-area {
     display: flex;
     gap: 20px;
+    align-items: stretch; /* 子要素の高さを揃える */
 }
 
 #game-board {
@@ -171,7 +172,7 @@ main {
     grid-template-rows: auto 1fr auto;
     gap: 15px; /* 縦の隙間を狭く */
     width: 100%;
-    height: calc(100vh - 180px); /* 全体の高さを少し低く */
+    /* heightプロパティを削除し、親のalign-itemsに任せる */
 }
 
 #yaku-navi {
@@ -181,7 +182,7 @@ main {
     border-radius: 10px;
     padding: 15px;
     box-sizing: border-box;
-    height: calc(100vh - 180px); /* 全体の高さに合わせて調整 */
+    /* heightプロパティを削除 */
     overflow-y: auto;
 }
 

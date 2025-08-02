@@ -307,9 +307,9 @@ function renderRecommendedYaku() {
         recommendations = recommendations.filter(r => r.key !== 'tanzaku');
     }
 
-    // 3. スコアでソートし、上位2件を取得
+    // 3. スコアでソートし、上位3件を取得
     recommendations.sort((a, b) => b.score - a.score);
-    const topRecommendations = recommendations.slice(0, 2);
+    const topRecommendations = recommendations.slice(0, 3);
 
     // 4. 表示と場のカードのハイライト
     document.querySelectorAll('.target-card').forEach(c => c.classList.remove('target-card'));
