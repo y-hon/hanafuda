@@ -991,40 +991,165 @@ document.addEventListener('DOMContentLoaded', () => {
 
     showRulesButton.addEventListener('click', () => {
         rulesContent.innerHTML = `
-        <h2>ルール説明</h2>
-        <h3>こいこいルール概要</h3>
-        <p>花札のこいこいは、手札と場札を合わせて役を作り、得点を競うゲームです。</p>
-        <h4>ゲームの流れ</h4>
-        <ul>
-            <li>手札から1枚選び、場に出します。同じ月の札が場にあれば、合わせて獲得できます。</li>
-            <li><b>場に同じ月の札が2枚ある場合：</b>好きな方を選んで獲得できます。</li>
-            <li><b>場に同じ月の札が3枚ある場合：</b>手札の1枚と合わせて4枚すべてを獲得できます。</li>
-            <li>その後、山札から1枚めくり、同様に場の札と合わせます。</li>
-            <li>役が成立したら、「こいこい」をしてゲームを続けるか、「勝負」してゲームを終了するか選択できます。</li>
-            <li><b>こいこいのリスク：</b>自分が「こいこい」を宣言した後に、相手が先に役を完成させて上がった場合、相手の得点は2倍になります。</li>
-        </ul>
-        <h4>特殊な役（手役）</h4>
-        <p>ゲーム開始時の手札だけで成立する役です。成立した場合、その時点で勝ちとなり点数を得ます。</p>
-        <ul>
-            <li><b>手四（てし）：</b>同じ月の札が4枚ある（6点）</li>
-            <li><b>くっつき：</b>同じ月の札2枚のペアが4組ある（6点）</li>
-        </ul>
-        <h4>主な役</h4>
-        <ul>
-            <li><b>五光 (10点)</b>: 光札5枚</li>
-            <li><b>四光 (8点)</b>: 光札4枚（「柳に小野道風」を除く）</li>
-            <li><b>雨四光 (7点)</b>: 光札4枚（「柳に小野道風」を含む）</li>
-            <li><b>三光 (5点)</b>: 光札3枚（「柳に小野道風」を除く）</li>
-            <li><b>花見で一杯 (5点)</b>: 「桜に幕」と「菊に盃」</li>
-            <li><b>月見で一杯 (5点)</b>: 「芒に月」と「菊に盃」</li>
-            <li><b>猪鹿蝶 (5点)</b>: 猪、鹿、蝶の3枚</li>
-            <li><b>赤短 (6点)</b>: 松、梅、桜の赤短冊3枚</li>
-            <li><b>青短 (6点)</b>: 牡丹、菊、紅葉の青短冊3枚</li>
-            <li><b>短冊 (1点)</b>: 短冊5枚。以降1枚ごとに+1点</li>
-            <li><b>タネ (1点)</b>: タネ札5枚。以降1枚ごとに+1点</li>
-            <li><b>カス (1点)</b>: カス札10枚。以降1枚ごとに+1点</li>
-        </ul>
+            <h2>ルール説明</h2>
+            <div class="rules-tabs">
+                <button class="tab-link active" data-tab="tab-1">ゲームの流れ</button>
+                <button class="tab-link" data-tab="tab-2">札の種類</button>
+                <button class="tab-link" data-tab="tab-3">役の一覧</button>
+                <button class="tab-link" data-tab="tab-4">特殊ルール</button>
+            </div>
+
+            <div id="tab-1" class="tab-content active">
+                <h3>こいこいルール概要</h3>
+                <p>花札のこいこいは、手札と場札を合わせて役を作り、得点を競うゲームです。</p>
+                
+                <h4>ゲームの場の構成</h4>
+                <div class="rules-diagram">
+                    <div class="diagram-row">
+                        <div class="diagram-box"><span>山札</span></div>
+                    </div>
+                    <div class="diagram-row">
+                        <div class="diagram-arrow">↓</div>
+                    </div>
+                    <div class="diagram-row">
+                        <div class="diagram-box"><span>あなたの手札</span></div>
+                        <div class="diagram-arrow">→</div>
+                        <div class="diagram-box"><span>場</span></div>
+                        <div class="diagram-arrow">←</div>
+                        <div class="diagram-box"><span>AIの手札</span></div>
+                    </div>
+                     <div class="diagram-row">
+                        <div class="diagram-arrow"></div>
+                        <div class="diagram-arrow">↘</div>
+                        <div class="diagram-arrow">↓</div>
+                        <div class="diagram-arrow">↙</div>
+                        <div class="diagram-arrow"></div>
+                    </div>
+                    <div class="diagram-row">
+                         <div class="diagram-box"></div>
+                        <div class="diagram-box"><span>あなたの獲得札</span></div>
+                         <div class="diagram-box"></div>
+                        <div class="diagram-box"><span>AIの獲得札</span></div>
+                         <div class="diagram-box"></div>
+                    </div>
+                </div>
+
+                <h4>基本的な流れ</h4>
+                <ul>
+                    <li>各プレイヤーに8枚ずつ手札が配られ、場に8枚の札が公開されます。残りは山札となります。</li>
+                    <li>プレイヤーは手札から1枚選び、場に出します。</li>
+                    <li>場に同じ月（同じ植物）の札があれば、2枚を合わせて自分のものとして獲得できます。</li>
+                    <li><b>場に同じ月の札が2枚ある場合：</b>好きな方を選んで獲得できます。</li>
+                    <li><b>場に同じ月の札が3枚ある場合：</b>手札の1枚と合わせて4枚すべてを獲得できます。</li>
+                    <li>その後、山札から1枚めくり、場に公開します。これも同様に、同じ月の札があれば獲得できます。</li>
+                    <li>獲得した札は自分の横に並べておきます。</li>
+                    <li>獲得した札で「役」が完成すると、ゲームを続けるか（こいこい）、ここで勝負するか（やめる）を選択できます。</li>
+                    <li>手札がなくなるとゲーム終了です。</li>
+                </ul>
+            </div>
+
+            <div id="tab-2" class="tab-content">
+                <h3>札の種類</h3>
+                <p>花札は48枚あり、12ヶ月×4枚で構成されています。札には以下の4種類があります。</p>
+                <div class="rules-yaku-list">
+                    <div class="rules-yaku-item">
+                        <div class="rules-yaku-name"><b>光札 (ひかりふだ)</b></div>
+                        <div class="rules-yaku-cards">
+                            <img src="textures/hanafuda_01_01.jpg" class="card"><img src="textures/hanafuda_03_01.jpg" class="card"><img src="textures/hanafuda_08_01.jpg" class="card"><img src="textures/hanafuda_11_01.jpg" class="card"><img src="textures/hanafuda_12_01.jpg" class="card">
+                        </div>
+                    </div>
+                    <div class="rules-yaku-item">
+                        <div class="rules-yaku-name"><b>タネ札 (たねふだ)</b></div>
+                        <div class="rules-yaku-cards">
+                             <img src="textures/hanafuda_02_01.jpg" class="card"><img src="textures/hanafuda_04_01.jpg" class="card"><img src="textures/hanafuda_05_01.jpg" class="card"><img src="textures/hanafuda_06_01.jpg" class="card"><img src="textures/hanafuda_07_01.jpg" class="card"><img src="textures/hanafuda_08_02.jpg" class="card"><img src="textures/hanafuda_09_01.jpg" class="card"><img src="textures/hanafuda_10_01.jpg" class="card"><img src="textures/hanafuda_11_02.jpg" class="card">
+                        </div>
+                    </div>
+                    <div class="rules-yaku-item">
+                        <div class="rules-yaku-name"><b>短冊札 (たんざくふだ)</b></div>
+                        <div class="rules-yaku-cards">
+                            <img src="textures/hanafuda_01_02.jpg" class="card"><img src="textures/hanafuda_02_02.jpg" class="card"><img src="textures/hanafuda_03_02.jpg" class="card"><img src="textures/hanafuda_04_02.jpg" class="card"><img src="textures/hanafuda_05_02.jpg" class="card"><img src="textures/hanafuda_06_02.jpg" class="card"><img src="textures/hanafuda_07_02.jpg" class="card"><img src="textures/hanafuda_09_02.jpg" class="card"><img src="textures/hanafuda_10_02.jpg" class="card"><img src="textures/hanafuda_11_03.jpg" class="card">
+                        </div>
+                    </div>
+                    <div class="rules-yaku-item">
+                        <div class="rules-yaku-name"><b>カス札 (かすふだ)</b></div>
+                        <div class="rules-yaku-desc">上記以外の24枚の札です。</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-3" class="tab-content">
+                <h3>役の一覧</h3>
+                <div id="rules-yaku-list-main" class="rules-yaku-list"></div>
+            </div>
+
+            <div id="tab-4" class="tab-content">
+                <h3>特殊ルール</h3>
+                <h4>こいこい</h4>
+                <p>役ができたときに、さらに高得点を狙ってゲームを続行することを「こいこい」と言います。</p>
+                <ul>
+                    <li><b>メリット:</b> さらに別の役を作って点数を上乗せできます。</li>
+                    <li><b>リスク:</b>自分が「こいこい」した後に、相手が先に役を完成させて上がった場合、相手の得点は2倍になります。逆に、相手が「こいこい」した後に自分が上がれば、自分の得点が2倍になります。</li>
+                </ul>
+                <h4>手役 (てやく)</h4>
+                <p>ゲーム開始時の手札だけで成立する役です。成立した場合、その時点で勝ちとなり点数を得ます。</p>
+                <div class="rules-yaku-list">
+                    <div class="rules-yaku-item">
+                        <div class="rules-yaku-name"><b>手四 (てし)</b> (6点)</div>
+                        <div class="rules-yaku-desc">同じ月の札が4枚ある</div>
+                    </div>
+                    <div class="rules-yaku-item">
+                        <div class="rules-yaku-name"><b>くっつき</b> (6点)</div>
+                        <div class="rules-yaku-desc">同じ月の札2枚のペアが4組ある</div>
+                    </div>
+                </div>
+            </div>
         `;
+
+        // --- Tab functionality ---
+        const tabs = rulesContent.querySelectorAll('.tab-link');
+        const contents = rulesContent.querySelectorAll('.tab-content');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                contents.forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                rulesContent.querySelector(`#${tab.dataset.tab}`).classList.add('active');
+            });
+        });
+
+        // --- Populate Yaku List in Tab 3 ---
+        const yakuListMain = rulesContent.querySelector('#rules-yaku-list-main');
+        const yakuOrder = ['goko', 'shiko', 'ameshiko', 'sanko', 'hanami', 'tsukimi', 'inoshikacho', 'akatan', 'aotan', 'tanzaku', 'tane', 'kasu'];
+
+        yakuOrder.forEach(key => {
+            const yaku = YakuDefinitions[key];
+            const item = document.createElement('div');
+            item.className = 'rules-yaku-item';
+
+            let content = `<div class="rules-yaku-name"><b>${yaku.name}</b> (${yaku.points}点)</div>`;
+            
+            if (yaku.cards) {
+                content += `<div class="rules-yaku-cards">`;
+                yaku.cards.forEach(cardName => {
+                    const cardData = HanafudaCards.find(c => c.name === cardName);
+                    if (cardData) {
+                        content += `<img src="${cardData.image}" alt="${cardData.name}" class="card">`;
+                    }
+                });
+                content += `</div>`;
+            } else if (yaku.type) {
+                let description = '';
+                switch(yaku.type) {
+                    case 'tanzaku': description = `短冊札を${yaku.count}枚集める。以降1枚ごとに+1点。`; break;
+                    case 'tane': description = `タネ札を${yaku.count}枚集める。以降1枚ごとに+1点。`; break;
+                    case 'kasu': description = `カス札を${yaku.count}枚集める。以降1枚ごとに+1点。`; break;
+                }
+                content += `<div class="rules-yaku-desc">${description}</div>`;
+            }
+            item.innerHTML = content;
+            yakuListMain.appendChild(item);
+        });
+
         rulesModal.classList.remove('hidden');
     });
 
